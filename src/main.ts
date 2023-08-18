@@ -7,6 +7,7 @@ import { GoogleSaveSettingTab } from "./settingTab";
 
 export default class GoogleSavePlugin extends Plugin {
 	settings: GoogleSavePluginSettings;
+	settingTab: GoogleSaveSettingTab;
 
 	async onload() {
 		await this.loadSettings();
@@ -61,7 +62,8 @@ export default class GoogleSavePlugin extends Plugin {
 		// });
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new GoogleSaveSettingTab(this.app, this));
+		this.settingTab = new GoogleSaveSettingTab(this.app, this);
+		this.addSettingTab(this.settingTab);
 
 		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
 		// Using this function will automatically remove the event listener when this plugin is disabled.
@@ -81,6 +83,10 @@ export default class GoogleSavePlugin extends Plugin {
 				console.log(file.name, file.path);
 			})
 		);
+
+		this.registerObsidianProtocolHandler("googleLogin", (...query: any) => {
+			this.settingTab.googleAuth.handleLoginResponse({ ...query });
+		});
 	}
 
 	onunload() {}
