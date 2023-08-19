@@ -84,7 +84,7 @@ export default class GoogleSavePlugin extends Plugin {
 			})
 		);
 
-		this.registerObsidianProtocolHandler("googleLogin", (...query: any) => {
+		this.registerObsidianProtocolHandler("googleLogin", (query: any) => {
 			this.settingTab.googleAuth.handleLoginResponse({ ...query });
 		});
 	}

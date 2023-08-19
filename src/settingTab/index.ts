@@ -20,23 +20,7 @@ export class GoogleSaveSettingTab extends PluginSettingTab {
 
 		const isLoggedIn = !!this.googleAuth.getRefreshToken();
 
-		new Setting(containerEl).setName("Google Client Id").addText((text) => {
-			text.setValue(this.plugin.settings.googleClientId);
-		});
-
-		new Setting(containerEl)
-			.setName("Google Client Secret")
-			.addText((text) => {
-				text.setValue(this.plugin.settings.googleClientSecret);
-			});
-
-		new Setting(containerEl)
-			.setName("Google Client Oauth Server")
-			.addText((text) => {
-				text.setValue(this.plugin.settings.googleOauthServer);
-			});
-
-		new Setting(containerEl)
+		const GoogleAuthSetting = new Setting(containerEl)
 			.setName("Login with Google")
 			.addButton((button) => {
 				button
@@ -51,5 +35,16 @@ export class GoogleSaveSettingTab extends PluginSettingTab {
 						this.googleAuth.login();
 					});
 			});
+
+		if (isLoggedIn) {
+			GoogleAuthSetting.addButton((button) => {
+				button.setButtonText("Refresh token").onClick(async () => {
+					this.googleAuth.refreshAccessToken();
+
+					this.hide();
+					this.display();
+				});
+			});
+		}
 	}
 }

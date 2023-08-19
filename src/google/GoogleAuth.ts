@@ -1,12 +1,20 @@
+import { requestUrl } from "obsidian";
 import GoogleSavePlugin from "../main";
+import { Utils } from "../shared/utils";
 import { GoogleTokenResponse } from "../types/googleAuth";
 import { LocalStorageKeys } from "../types/localStorage";
+import { resolve } from "url";
+
+const API_SERVER = "https://google-save-server.vercel.app";
 
 export class GoogleAuth {
 	constructor(private readonly plugin: GoogleSavePlugin) {}
 
 	public login() {
-		window.open("https://google-save-server.vercel.app/api/google");
+		const loginUrl = new URL(API_SERVER);
+		loginUrl.pathname = "/api/google";
+
+		window.open(loginUrl.toString());
 	}
 
 	public handleLoginResponse({
@@ -15,10 +23,18 @@ export class GoogleAuth {
 		refresh_token,
 	}: GoogleTokenResponse) {
 		this.setAccessToken(access_token);
-		this.setExpiresIn(this.getExpiresAt(Number(expires_in)));
+		this.setExpiresIn(this.calculateExpiresAt(Number(expires_in)));
 		this.setRefreshToken(refresh_token);
 
 		this.plugin.settingTab.display();
+	}
+
+	public handleRefreshResponse({
+		access_token,
+		expires_in,
+	}: Omit<GoogleTokenResponse, "refresh_token">) {
+		this.setAccessToken(access_token);
+		this.setExpiresIn(this.calculateExpiresAt(Number(expires_in)));
 	}
 
 	public logout() {
@@ -29,7 +45,7 @@ export class GoogleAuth {
 		this.plugin.settingTab.display();
 	}
 
-	private getExpiresAt(expiresIn: number) {
+	private calculateExpiresAt(expiresIn: number) {
 		return Math.floor(Date.now() / 1000 + expiresIn - 60);
 	}
 
@@ -57,9 +73,87 @@ export class GoogleAuth {
 		return refresh_token;
 	}
 
-	public getRefreshToken(): string {
-		return (
-			window.localStorage.getItem(LocalStorageKeys.REFRESH_TOKEN) ?? ""
+	public getRefreshToken(): string | null {
+		return window.localStorage.getItem(LocalStorageKeys.REFRESH_TOKEN);
+	}
+
+	public async getAccessToken(): Promise<string | null> {
+		const isLoggedIn = this.validateIfLoggedIn();
+
+		if (!isLoggedIn) return null;
+
+		let accessToken = this.getAccessTokenIfValid();
+
+		if (!accessToken) {
+			accessToken = await this.refreshAccessToken();
+		}
+
+		return accessToken;
+	}
+
+	public async refreshAccessToken(): Promise<string | null> {
+		const refreshToken = this.getRefreshToken();
+
+		if (!refreshToken) return null;
+
+		const refreshUrl = new URL(API_SERVER);
+		refreshUrl.pathname = "/api/google/refresh";
+		refreshUrl.searchParams.append("refresh_token", refreshToken);
+
+		const { json: tokenData } = await requestUrl({
+			method: "GET",
+			url: refreshUrl.toString(),
+			headers: { "content-type": "application/json" },
+		});
+
+		if (!tokenData) {
+			Utils.createNotice("Error while refreshing authentication");
+			return null;
+		}
+
+		const { access_token, expires_in } = tokenData;
+
+		this.setAccessToken(access_token);
+		this.setExpiresIn(this.calculateExpiresAt(Number(expires_in)));
+
+		return access_token;
+	}
+
+	private getAccessTokenIfValid(): string | null {
+		const expiresAt = this.getExpiresAt();
+		const accessToken = window.localStorage.getItem(
+			LocalStorageKeys.ACCESS_TOKEN
 		);
+
+		// token
+		if (!expiresAt || !accessToken) return null;
+
+		// token expired
+		if (new Date(expiresAt * 1000) <= new Date()) return null;
+
+		return accessToken;
+	}
+
+	public getExpiresAt(): number | null {
+		const expiresAt = window.localStorage.getItem(
+			LocalStorageKeys.EXPIRES_AT
+		);
+
+		if (!expiresAt) return null;
+
+		if (Number.isNaN(expiresAt)) return null;
+
+		return Number(expiresAt);
+	}
+
+	public validateIfLoggedIn(): boolean {
+		const refreshToken = this.getRefreshToken();
+
+		if (!refreshToken) {
+			Utils.createNotice("Not yet logged in");
+			return false;
+		}
+
+		return true;
 	}
 }
