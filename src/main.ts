@@ -1,13 +1,16 @@
-import { Plugin } from "obsidian";
+import { Plugin, TFile, TFolder } from "obsidian";
 import { GoogleSavePluginSettings } from "./types";
 import { DEFAULT_SETTINGS } from "./defaultSetting";
 import { GoogleSaveSettingTab } from "./settingTab";
+import { GoogleDriveFiles } from "./google/GogleDriveFiles";
+import { Utils } from "./shared/utils";
 
 // Remember to rename these classes and interfaces!
 
 export default class GoogleSavePlugin extends Plugin {
 	settings: GoogleSavePluginSettings;
 	settingTab: GoogleSaveSettingTab;
+	googleDriveFiles: GoogleDriveFiles;
 
 	async onload() {
 		await this.loadSettings();
@@ -78,18 +81,91 @@ export default class GoogleSavePlugin extends Plugin {
 		// 	}, 5 * 60 * 1000)
 		// );
 
+		this.googleDriveFiles = new GoogleDriveFiles(
+			this,
+			this.settingTab.googleAuth
+		);
+
+		this.checkRootFolder();
+
+		this.registerVaultEvents();
+		this.registerObsidianProtocols();
+	}
+
+	onunload() {}
+
+	private async checkRootFolder() {
+		const rootDir = this.settings.rootDir || this.app.vault.getName();
+
+		const foundFolder = await this.googleDriveFiles.list({
+			q: `mimeType='application/vnd.google-apps.folder'`,
+			name: rootDir,
+		});
+
+		if (foundFolder.files.length === 1) return;
+
+		const { id } = await this.googleDriveFiles.createFolder(rootDir);
+
+		this.settings.fileMap[id] = "/";
+		this.settings.fileReverseMap["/"] = id;
+		this.saveSettings();
+
+		Utils.createNotice("Create root folder");
+	}
+
+	private registerVaultEvents() {
 		this.registerEvent(
-			this.app.vault.on("modify", (file) => {
-				console.log(file.name, file.path);
+			this.app.vault.on("create", async (file: TFile | TFolder) => {
+				const isFolder = file instanceof TFolder;
+
+				// console.log(file, isFolder);
+
+				if (isFolder) {
+					const result = await this.googleDriveFiles.createFolder(
+						file.path
+					);
+
+					return;
+				}
+
+				const fileData = await this.app.vault.adapter.readBinary(
+					file.path
+				);
+
+				const result = await this.googleDriveFiles.create(
+					file.name,
+					fileData
+				);
+				console.log(result);
 			})
 		);
 
+		this.registerEvent(this.app.vault.on("modify", (file) => {}));
+
+		this.registerEvent(
+			this.app.vault.on("delete", (file) => {
+				console.log("delete", file.name, file.path);
+			})
+		);
+
+		this.registerEvent(
+			this.app.vault.on("rename", (file) => {
+				console.log("rename", file.name, file.path);
+			})
+		);
+	}
+
+	private registerObsidianProtocols() {
 		this.registerObsidianProtocolHandler("googleLogin", (query: any) => {
 			this.settingTab.googleAuth.handleLoginResponse({ ...query });
 		});
 	}
 
-	onunload() {}
+	private updateFileMapping(googleDriveId: string, path: string) {
+		this.settings.fileMap[googleDriveId] = path;
+		this.settings.fileReverseMap[path] = googleDriveId;
+		this.saveSettings();
+	}
 
 	async loadSettings() {
 		this.settings = Object.assign(

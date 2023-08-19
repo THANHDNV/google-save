@@ -3,15 +3,12 @@ import GoogleSavePlugin from "../main";
 import { Utils } from "../shared/utils";
 import { GoogleTokenResponse } from "../types/googleAuth";
 import { LocalStorageKeys } from "../types/localStorage";
-import { resolve } from "url";
-
-const API_SERVER = "https://google-save-server.vercel.app";
 
 export class GoogleAuth {
 	constructor(private readonly plugin: GoogleSavePlugin) {}
 
 	public login() {
-		const loginUrl = new URL(API_SERVER);
+		const loginUrl = new URL(this.plugin.settings.googleOauthServer);
 		loginUrl.pathname = "/api/google";
 
 		window.open(loginUrl.toString());
@@ -96,7 +93,7 @@ export class GoogleAuth {
 
 		if (!refreshToken) return null;
 
-		const refreshUrl = new URL(API_SERVER);
+		const refreshUrl = new URL(this.plugin.settings.googleOauthServer);
 		refreshUrl.pathname = "/api/google/refresh";
 		refreshUrl.searchParams.append("refresh_token", refreshToken);
 
