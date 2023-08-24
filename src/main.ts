@@ -4,6 +4,7 @@ import { DEFAULT_SETTINGS } from "./defaultSetting";
 import { GoogleSaveSettingTab } from "./settingTab";
 import { GoogleDriveFiles } from "./google/GogleDriveFiles";
 import { Utils } from "./shared/utils";
+import { FileHandler } from "./obsidian/FileHandler";
 
 // Remember to rename these classes and interfaces!
 
@@ -11,6 +12,7 @@ export default class GoogleSavePlugin extends Plugin {
 	settings: GoogleSavePluginSettings;
 	settingTab: GoogleSaveSettingTab;
 	googleDriveFiles: GoogleDriveFiles;
+	fileHandler: FileHandler;
 
 	async onload() {
 		await this.loadSettings();
@@ -88,123 +90,15 @@ export default class GoogleSavePlugin extends Plugin {
 
 		this.registerObsidianProtocols();
 
-		this.app.workspace.onLayoutReady(() => {
-			this.checkRootFolder();
-			this.registerVaultEvents();
-		});
+		this.fileHandler = new FileHandler(this, this.googleDriveFiles);
 	}
 
 	onunload() {}
-
-	private async checkRootFolder() {
-		const rootDir = this.settings.rootDir || this.app.vault.getName();
-
-		const foundFolder = await this.googleDriveFiles.list({
-			q: `mimeType='application/vnd.google-apps.folder' and trashed=false and name='${rootDir}'`,
-		});
-
-		if (foundFolder.files.length >= 1) {
-			if (!this.settings.fileMap[foundFolder.files[0].id]) {
-				this.addFileMapping(foundFolder.files[0].id, "/");
-			}
-
-			return;
-		}
-
-		const result = await this.googleDriveFiles.createFolder(rootDir);
-
-		const { id } = result;
-
-		this.addFileMapping(id, "/");
-		this.saveSettings();
-
-		Utils.createNotice("Create root folder");
-	}
-
-	private registerVaultEvents() {
-		this.registerEvent(
-			this.app.vault.on("create", async (file: TFile | TFolder) => {
-				const isFolder = file instanceof TFolder;
-
-				if (isFolder) {
-					const { id } = await this.googleDriveFiles.createFolder(
-						file.name,
-						this.getFolderIdFromPath(file.path)
-					);
-
-					this.addFileMapping(id, "/" + file.path);
-
-					Utils.createNotice(`Create folder ${file.name}`);
-
-					return;
-				}
-
-				const fileData = await this.app.vault.adapter.readBinary(
-					file.path
-				);
-
-				const { id } = await this.googleDriveFiles.create(
-					file.name,
-					this.getFolderIdFromPath(file.path),
-					fileData
-				);
-
-				Utils.createNotice(`Create file ${file.name}`);
-
-				this.addFileMapping(id, "/" + file.path);
-			})
-		);
-
-		this.registerEvent(this.app.vault.on("modify", (file) => {}));
-
-		this.registerEvent(
-			this.app.vault.on("delete", (file) => {
-				this.deleteFileMapping("/" + file.path);
-				Utils.createNotice(
-					`Delete ${file instanceof TFolder ? "folder" : "file"} ${
-						file.name
-					}`
-				);
-			})
-		);
-
-		this.registerEvent(
-			this.app.vault.on("rename", (file) => {
-				console.log("rename", file.name, file.path);
-			})
-		);
-	}
 
 	private registerObsidianProtocols() {
 		this.registerObsidianProtocolHandler("googleLogin", (query: any) => {
 			this.settingTab.googleAuth.handleLoginResponse({ ...query });
 		});
-	}
-
-	private addFileMapping(googleDriveId: string, path: string) {
-		this.settings.fileMap[googleDriveId] = path;
-		this.settings.fileReverseMap[path] = googleDriveId;
-		this.saveSettings();
-	}
-
-	private deleteFileMapping(path: string) {
-		const driveId = this.settings.fileReverseMap[path];
-
-		delete this.settings.fileMap[driveId];
-		delete this.settings.fileReverseMap[path];
-
-		this.saveSettings();
-	}
-
-	private getFolderIdFromPath(_filePath: string = "") {
-		const filePath = _filePath?.startsWith("/")
-			? _filePath
-			: "/" + _filePath;
-
-		const pathSplit = filePath.split("/");
-		const folderPath = pathSplit.slice(0, pathSplit.length - 1).join("/");
-
-		return this.settings.fileReverseMap[folderPath || "/"];
 	}
 
 	async loadSettings() {

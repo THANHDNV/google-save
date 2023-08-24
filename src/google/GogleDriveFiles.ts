@@ -84,6 +84,27 @@ export class GoogleDriveFiles {
 		return json;
 	}
 
+	public async moveOrRenameFile(
+		fileId: string,
+		oldFolderId: string,
+		newFolderId: string,
+		newName: string
+	) {
+		const { json } = await this.request({
+			pathname: `/drive/v3/files/${fileId}`,
+			method: "PATCH",
+			query: {
+				removeParents: oldFolderId,
+				addParents: newFolderId,
+			},
+			body: JSON.stringify({
+				name: newName,
+			}),
+		});
+
+		return json;
+	}
+
 	private async request({
 		pathname,
 		headers,
