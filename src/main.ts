@@ -86,10 +86,12 @@ export default class GoogleSavePlugin extends Plugin {
 			this.settingTab.googleAuth
 		);
 
-		this.checkRootFolder();
-
-		this.registerVaultEvents();
 		this.registerObsidianProtocols();
+
+		this.app.workspace.onLayoutReady(() => {
+			this.checkRootFolder();
+			this.registerVaultEvents();
+		});
 	}
 
 	onunload() {}
@@ -98,16 +100,22 @@ export default class GoogleSavePlugin extends Plugin {
 		const rootDir = this.settings.rootDir || this.app.vault.getName();
 
 		const foundFolder = await this.googleDriveFiles.list({
-			q: `mimeType='application/vnd.google-apps.folder'`,
-			name: rootDir,
+			q: `mimeType='application/vnd.google-apps.folder' and trashed=false and name='${rootDir}'`,
 		});
 
-		if (foundFolder.files.length === 1) return;
+		if (foundFolder.files.length >= 1) {
+			if (!this.settings.fileMap[foundFolder.files[0].id]) {
+				this.addFileMapping(foundFolder.files[0].id, "/");
+			}
 
-		const { id } = await this.googleDriveFiles.createFolder(rootDir);
+			return;
+		}
 
-		this.settings.fileMap[id] = "/";
-		this.settings.fileReverseMap["/"] = id;
+		const result = await this.googleDriveFiles.createFolder(rootDir);
+
+		const { id } = result;
+
+		this.addFileMapping(id, "/");
 		this.saveSettings();
 
 		Utils.createNotice("Create root folder");
@@ -118,12 +126,15 @@ export default class GoogleSavePlugin extends Plugin {
 			this.app.vault.on("create", async (file: TFile | TFolder) => {
 				const isFolder = file instanceof TFolder;
 
-				// console.log(file, isFolder);
-
 				if (isFolder) {
-					const result = await this.googleDriveFiles.createFolder(
-						file.path
+					const { id } = await this.googleDriveFiles.createFolder(
+						file.name,
+						this.getFolderIdFromPath(file.path)
 					);
+
+					this.addFileMapping(id, "/" + file.path);
+
+					Utils.createNotice(`Create folder ${file.name}`);
 
 					return;
 				}
@@ -132,11 +143,15 @@ export default class GoogleSavePlugin extends Plugin {
 					file.path
 				);
 
-				const result = await this.googleDriveFiles.create(
+				const { id } = await this.googleDriveFiles.create(
 					file.name,
+					this.getFolderIdFromPath(file.path),
 					fileData
 				);
-				console.log(result);
+
+				Utils.createNotice(`Create file ${file.name}`);
+
+				this.addFileMapping(id, "/" + file.path);
 			})
 		);
 
@@ -144,7 +159,12 @@ export default class GoogleSavePlugin extends Plugin {
 
 		this.registerEvent(
 			this.app.vault.on("delete", (file) => {
-				console.log("delete", file.name, file.path);
+				this.deleteFileMapping("/" + file.path);
+				Utils.createNotice(
+					`Delete ${file instanceof TFolder ? "folder" : "file"} ${
+						file.name
+					}`
+				);
 			})
 		);
 
@@ -161,10 +181,30 @@ export default class GoogleSavePlugin extends Plugin {
 		});
 	}
 
-	private updateFileMapping(googleDriveId: string, path: string) {
+	private addFileMapping(googleDriveId: string, path: string) {
 		this.settings.fileMap[googleDriveId] = path;
 		this.settings.fileReverseMap[path] = googleDriveId;
 		this.saveSettings();
+	}
+
+	private deleteFileMapping(path: string) {
+		const driveId = this.settings.fileReverseMap[path];
+
+		delete this.settings.fileMap[driveId];
+		delete this.settings.fileReverseMap[path];
+
+		this.saveSettings();
+	}
+
+	private getFolderIdFromPath(_filePath: string = "") {
+		const filePath = _filePath?.startsWith("/")
+			? _filePath
+			: "/" + _filePath;
+
+		const pathSplit = filePath.split("/");
+		const folderPath = pathSplit.slice(0, pathSplit.length - 1).join("/");
+
+		return this.settings.fileReverseMap[folderPath || "/"];
 	}
 
 	async loadSettings() {

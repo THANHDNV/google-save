@@ -1,6 +1,7 @@
-import { RequestUrlParam, requestUrl } from "obsidian";
+import { RequestUrlParam, arrayBufferToBase64, requestUrl } from "obsidian";
 import { GoogleAuth } from "./GoogleAuth";
 import GoogleSavePlugin from "../main";
+import { v4 as uuid } from "uuid";
 
 const GOOGLE_API = "https://www.googleapis.com/";
 const OBSIDIAN_FOLDER = "obsidian-test";
@@ -25,27 +26,54 @@ export class GoogleDriveFiles {
 		return json;
 	}
 
-	public async create(fileName: string, fileBuffer: ArrayBuffer) {
+	public async create(
+		fileName: string,
+		parentId: string,
+		fileBuffer: ArrayBuffer
+	) {
 		if (!this.authClient.getAccessToken()) {
 			return;
 		}
 
+		const boundary = uuid();
+
+		const contentType = "application/octet-stream";
+
+		const body = `--${boundary}\r\ncontent-type: application/json\r\n\r\n${JSON.stringify(
+			{
+				name: fileName,
+				parents: [parentId],
+				mimeType: contentType,
+			}
+		)}\r\n--${boundary}\r\ncontent-type: ${contentType}\r\nContent-Transfer-Encoding: base64\r\n\r\n${Buffer.from(
+			fileBuffer
+		).toString("base64")}\r\n--${boundary}--`;
+
 		const { json } = await this.request({
-			pathname: "/drive/v3/files",
+			pathname: "/upload/drive/v3/files",
 			method: "POST",
-			body: fileBuffer,
+			headers: {
+				"Content-Type": `multipart/related; boundary=${boundary}`,
+			},
+			query: {
+				uploadType: "multipart",
+			},
+			body,
 		});
 
 		return json;
 	}
 
-	public async createFolder(folderName: string) {
+	public async createFolder(folderName: string, parentId?: string) {
 		const mimeType = "application/vnd.google-apps.folder";
 
 		const body = {
 			name: folderName,
+			parents: parentId ? [parentId] : undefined,
 			mimeType,
 		};
+
+		console.log(body);
 
 		const { json } = await this.request({
 			pathname: "/drive/v3/files",
