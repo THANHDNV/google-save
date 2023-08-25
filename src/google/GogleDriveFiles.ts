@@ -105,6 +105,13 @@ export class GoogleDriveFiles {
 		return json;
 	}
 
+	public async deleteFile(fileId: string) {
+		await this.request({
+			pathname: `/drive/v3/files/${fileId}`,
+			method: "DELETE",
+		});
+	}
+
 	private async request({
 		pathname,
 		headers,

@@ -48,18 +48,17 @@ export class FileHandler {
 		);
 
 		this.plugin.registerEvent(
-			this.plugin.app.vault.on("modify", (file) => {})
+			this.plugin.app.vault.on(
+				"modify",
+				this.handleModifyEvent.bind(this)
+			)
 		);
 
 		this.plugin.registerEvent(
-			this.plugin.app.vault.on("delete", async (file) => {
-				await this.deleteFileMapping("/" + file.path);
-				Utils.createNotice(
-					`Delete ${file instanceof TFolder ? "folder" : "file"} ${
-						file.name
-					}`
-				);
-			})
+			this.plugin.app.vault.on(
+				"delete",
+				this.handleDeleteEvent.bind(this)
+			)
 		);
 
 		this.plugin.registerEvent(
@@ -127,6 +126,20 @@ export class FileHandler {
 			`${isMovingFile ? "Moved" : "Renamed"} file ${file.name}`
 		);
 	}
+
+	private async handleDeleteEvent(file: TAbstractFile) {
+		const fileId = this.getFileIdFromPath(file.path);
+
+		await this.googleDriveFiles.deleteFile(fileId);
+
+		await this.deleteFileMapping("/" + file.path);
+
+		Utils.createNotice(
+			`Delete ${file instanceof TFolder ? "folder" : "file"} ${file.name}`
+		);
+	}
+
+	private async handleModifyEvent(file: TAbstractFile) {}
 
 	private async addFileMapping(googleDriveId: string, path: string) {
 		this.plugin.settings.fileMap[googleDriveId] = path;
