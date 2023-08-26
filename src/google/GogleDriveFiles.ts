@@ -112,6 +112,40 @@ export class GoogleDriveFiles {
 		});
 	}
 
+	public async updateFile(fileId: string, fileBuffer: ArrayBuffer) {
+		if (!this.authClient.getAccessToken()) {
+			return;
+		}
+
+		const boundary = uuid();
+
+		const contentType = "application/octet-stream";
+
+		let contentBuffer;
+
+		const body = `--${boundary}\r\ncontent-type: application/json\r\n\r\n${JSON.stringify(
+			{
+				mimeType: contentType,
+			}
+		)}\r\n--${boundary}\r\ncontent-type: ${contentType}\r\nContent-Transfer-Encoding: base64\r\n\r\n${Buffer.from(
+			fileBuffer
+		).toString("base64")}\r\n--${boundary}--`;
+
+		const { json } = await this.request({
+			pathname: `/upload/drive/v3/files/${fileId}`,
+			method: "PATCH",
+			headers: {
+				"Content-Type": `multipart/related; boundary=${boundary}`,
+			},
+			query: {
+				uploadType: "multipart",
+			},
+			body,
+		});
+
+		return json;
+	}
+
 	private async request({
 		pathname,
 		headers,

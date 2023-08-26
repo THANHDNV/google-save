@@ -1,4 +1,4 @@
-import { TAbstractFile, TFile, TFolder } from "obsidian";
+import { TAbstractFile, TFile, TFolder, debounce } from "obsidian";
 import { GoogleDriveFiles } from "../google/GogleDriveFiles";
 import GoogleSavePlugin from "../main";
 import { Utils } from "../shared/utils";
@@ -47,12 +47,12 @@ export class FileHandler {
 			)
 		);
 
-		this.plugin.registerEvent(
-			this.plugin.app.vault.on(
-				"modify",
-				this.handleModifyEvent.bind(this)
-			)
+		const onModify = debounce(
+			this.handleModifyEvent.bind(this),
+			1500,
+			true
 		);
+		this.plugin.registerEvent(this.plugin.app.vault.on("modify", onModify));
 
 		this.plugin.registerEvent(
 			this.plugin.app.vault.on(
@@ -139,7 +139,19 @@ export class FileHandler {
 		);
 	}
 
-	private async handleModifyEvent(file: TAbstractFile) {}
+	private async handleModifyEvent(file: TAbstractFile) {
+		const fileId = this.getFileIdFromPath(file.path);
+
+		const fileData = await this.plugin.app.vault.adapter.readBinary(
+			file.path
+		);
+
+		const result = await this.googleDriveFiles.updateFile(fileId, fileData);
+
+		console.log(result);
+
+		Utils.createNotice(`Updated file ${file.name}`);
+	}
 
 	private async addFileMapping(googleDriveId: string, path: string) {
 		this.plugin.settings.fileMap[googleDriveId] = path;
