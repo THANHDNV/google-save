@@ -14,6 +14,63 @@ export class FileHandler {
 		});
 	}
 
+	public async sync() {
+		const rootFolderId = this.getFolderIdFromPath();
+
+		const files = await this.getAllFiles(rootFolderId, "/");
+
+		console.log(files);
+	}
+
+	private async getAllFiles(
+		folderId: string,
+		path: string,
+		pageToken?: string
+	) {
+		const files: {
+			id: string;
+			mimeType: string;
+			name: string;
+			path: string;
+		}[] = [];
+
+		const query: Record<string, string> = {
+			q: `'${folderId}' in parents`,
+		};
+
+		if (pageToken) {
+			query.pageToken = pageToken;
+		}
+
+		const { files: filesAndFolders, nextPageToken } =
+			await this.googleDriveFiles.list(query);
+
+		for (const file of filesAndFolders) {
+			if (file.mimeType === "application/vnd.google-apps.folder") {
+				const filesInFolder = await this.getAllFiles(
+					file.id,
+					path + "/" + file.name
+				);
+
+				files.push({
+					...file,
+					path,
+				});
+
+				files.push(...filesInFolder);
+
+				continue;
+			}
+
+			files.push({
+				...file,
+				path,
+			});
+		}
+
+		return files;
+	}
+
 	private async checkRootFolder() {
 		const rootDir =
 			this.plugin.settings.rootDir || this.plugin.app.vault.getName();

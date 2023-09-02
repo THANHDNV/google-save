@@ -46,5 +46,13 @@ export class GoogleSaveSettingTab extends PluginSettingTab {
 				});
 			});
 		}
+
+		if (isLoggedIn) {
+			new Setting(containerEl).addButton((button) => {
+				button.setButtonText("Sync").onClick(() => {
+					this.plugin.fileHandler.sync();
+				});
+			});
+		}
 	}
 }

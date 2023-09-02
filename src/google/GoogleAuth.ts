@@ -125,6 +125,8 @@ export class GoogleAuth {
 		// token
 		if (!expiresAt || !accessToken) return null;
 
+		if (accessToken === "undefined") return null;
+
 		// token expired
 		if (new Date(expiresAt * 1000) <= new Date()) return null;
 

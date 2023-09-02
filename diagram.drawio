@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="9_uRAEoBblHh17gwP5wx" name="Page-1">
-        <mxGraphModel dx="1893" dy="599" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="5542" dy="2260" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -174,68 +174,83 @@
                 <mxCell id="78" value="Server receives refresh_token, access_token, expires_in" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontFamily=Helvetica;fontSize=12;fontColor=#F0F0F0;" parent="1" vertex="1">
                     <mxGeometry x="890" y="2720" width="120" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="118" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="87" target="117">
+                <mxCell id="90" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="87" target="89" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="87" value="File or folder create create" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="1215" y="60" width="120" height="60" as="geometry"/>
+                <mxCell id="87" value="Sync fles from remote" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="1607" y="410" width="120" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="102" style="edgeStyle=none;html=1;" edge="1" parent="1" source="103" target="104">
+                <mxCell id="91" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="88" target="89" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="103" value="File create" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="2065" y="60" width="120" height="60" as="geometry"/>
+                <mxCell id="88" value="Get files from local" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="1607" y="630" width="120" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="104" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="2065" y="180" width="120" height="60" as="geometry"/>
-                </mxCell>
-                <mxCell id="111" style="edgeStyle=none;html=1;" edge="1" parent="1" source="112" target="113">
+                <mxCell id="112" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="89" target="92" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="112" value="File create" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="2915" y="60" width="120" height="60" as="geometry"/>
-                </mxCell>
-                <mxCell id="113" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="2915" y="180" width="120" height="60" as="geometry"/>
-                </mxCell>
-                <mxCell id="114" style="edgeStyle=none;html=1;" edge="1" parent="1" source="115" target="116">
+                <mxCell id="113" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="89" target="94" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="115" value="File create" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="3765" y="60" width="120" height="60" as="geometry"/>
-                </mxCell>
-                <mxCell id="116" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="3765" y="180" width="120" height="60" as="geometry"/>
-                </mxCell>
-                <mxCell id="121" value="No" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="117" target="120">
+                <mxCell id="114" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="89" target="93" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="122" value="Yes" style="edgeStyle=none;html=1;" edge="1" parent="1" source="117" target="119">
+                <mxCell id="89" value="Compare 2 lists" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="1912" y="520" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="107" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="92" target="101" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="117" value="Is Directory?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="1235" y="180" width="80" height="80" as="geometry"/>
-                </mxCell>
-                <mxCell id="126" style="edgeStyle=none;html=1;" edge="1" parent="1" source="119" target="123">
+                <mxCell id="108" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="92" target="100" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="119" value="Get parent directory drive id" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="1215" y="320" width="120" height="60" as="geometry"/>
-                </mxCell>
-                <mxCell id="120" value="Get parent directory drive id" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="1380" y="190" width="120" height="60" as="geometry"/>
-                </mxCell>
-                <mxCell id="128" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="123" target="127">
+                <mxCell id="109" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="92" target="99" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="123" value="Create folder on Drive" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="1215" y="440" width="120" height="60" as="geometry"/>
+                <mxCell id="92" value="onRemote: true&lt;br&gt;onLocal: true" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="2214" y="520" width="120" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="125" value="Read file content" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="1380" y="320" width="120" height="60" as="geometry"/>
+                <mxCell id="110" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="93" target="96" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="127" value="Save id" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="1215" y="560" width="120" height="60" as="geometry"/>
+                <mxCell id="111" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="93" target="98" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="93" value="onRemote: false&lt;br&gt;onLocal: true" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="2214" y="740" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="105" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.25;exitDx=0;exitDy=0;" parent="1" source="94" target="103" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="106" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="94" target="102" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="94" value="onRemote: true&lt;br&gt;onLocal: false" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="2214" y="300" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="96" value="Is new file on local?" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="2524" y="740" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="98" value="Is file deleted on remote?" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="2524" y="850" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="99" value="Is file modified" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="2524" y="630" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="100" value="Is file renamed?" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="2524" y="520" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="101" value="Is file moved?" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="2524" y="410" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="102" value="Is file deleted on local?" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="2524" y="300" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="103" value="Is new file on remote?" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="2524" y="190" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="115" value="&lt;h1&gt;Sync plan scenario&lt;/h1&gt;&lt;h1&gt;- metadata file&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; - contains deleted files (remoteIds)&lt;/h1&gt;&lt;h1&gt;- when getting files from local, try to get the most information as possible&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; - create time&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; - modified time&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; - rename time (default: create time)&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; - path&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; - remoteId (can be null if not yet sync)&lt;/h1&gt;&lt;h1&gt;- When comparing 2 lists&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; - comparing based on remoteId&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; - local file, but no remote id&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; - file is not yet sync to remote&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - sync to remote&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; - remote file with the same path may exist&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - if there's no content, chose whichever has content&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; -&amp;nbsp; if there's content, chose the one with recent modified&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - populate remoteId from remote to local&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; - local file has remoteId, but there's no remote file with that id&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; - file is deleted on remote&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - need to delete files on local&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; - local list doesn't have any file with a remote id&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; - new file on remote&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - need to sync to local&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; - file on local is deleted&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - need to delete on remote&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; - local file has a matching remote id on remote&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; - check modified time between remote and local&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - whichever file with the recent modified time is chosen&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; - check name between remote and local&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; - whichever file got rename recent is chosen&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; - check path between remote and local&lt;/h1&gt;&lt;h1&gt;&amp;nbsp; - comparing based on path&lt;/h1&gt;" style="text;html=1;strokeColor=none;fillColor=none;spacing=5;spacingTop=-20;whiteSpace=wrap;overflow=hidden;rounded=0;" parent="1" vertex="1">
+                    <mxGeometry x="1611" y="1100" width="1033" height="1510" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>

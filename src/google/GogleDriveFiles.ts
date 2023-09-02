@@ -20,7 +20,6 @@ export class GoogleDriveFiles {
 		const { json } = await this.request({
 			pathname: `/drive/v3/files`,
 			query,
-			// body: JSON.stringify(query),
 		});
 
 		return json;
