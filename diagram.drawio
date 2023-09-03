@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="9_uRAEoBblHh17gwP5wx" name="Page-1">
-        <mxGraphModel dx="4288" dy="2139" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="5680" dy="2983" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -670,7 +670,7 @@
                 <mxCell id="268" value="Assign operation to file" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
                     <mxGeometry x="3726" y="6999.995238095237" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
                 </mxCell>
-                <mxCell id="270" value="Sort assembleStateResults by key length" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                <mxCell id="270" value="Sort assembleStateResults by key length&lt;br&gt;(longest to shortest;inner to outer)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
                     <mxGeometry x="3726.0037500000003" y="6159.994285714285" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
                 </mxCell>
                 <mxCell id="273" value="Iterate sorted results" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
@@ -693,7 +693,7 @@
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="274" value="Is file?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="3758.99875" y="6699.997619047619" width="132.38" height="132.38095238095238" as="geometry"/>
+                    <mxGeometry x="3725.99875" y="6699.997619047619" width="198.57" height="132.38095238095238" as="geometry"/>
                 </mxCell>
                 <mxCell id="275" value="Assign operation to file" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
                     <mxGeometry x="2876" y="6999.995238095237" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
@@ -704,11 +704,14 @@
                 <mxCell id="276" value="Assign operation to folder" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
                     <mxGeometry x="4576" y="6999.995238095237" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
                 </mxCell>
-                <mxCell id="287" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="4920.46375" y="7286.544285714285" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
+                <mxCell id="424" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="287" target="415">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="287" value="add parent folder to keptFolder" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="5940.00375" y="7286.544285714285" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
                 </mxCell>
                 <mxCell id="289" value="Is file?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="2909.09875" y="7269.997619047619" width="132.38" height="132.38095238095238" as="geometry"/>
+                    <mxGeometry x="2875.99875" y="7269.997619047619" width="198.57" height="132.38095238095238" as="geometry"/>
                 </mxCell>
                 <mxCell id="296" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="290" target="287">
                     <mxGeometry relative="1" as="geometry"/>
@@ -722,31 +725,34 @@
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="290" value="Is folder in keptFolder?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="4609.09875" y="7269.997619047619" width="132.38" height="132.38095238095238" as="geometry"/>
+                    <mxGeometry x="4575.99875" y="7269.997619047619" width="198.57" height="132.38095238095238" as="geometry"/>
                 </mxCell>
                 <mxCell id="301" value="Yes" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="298" target="300">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="298" value="Is dTimeLocal !== undefined || dTimeRemote !== undefined?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="4609.09875" y="7569.997619047619" width="132.38" height="132.38095238095238" as="geometry"/>
+                <mxCell id="385" value="No" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="298" target="384">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="298" value="dTimeLocal !== undefined&lt;br&gt;||&lt;br&gt;dTimeRemote !== undefined" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="4575.99875" y="7567.617619047619" width="198.57" height="132.38095238095238" as="geometry"/>
                 </mxCell>
                 <mxCell id="304" value="Yes" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="300" target="302">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="300" value="is existLocal?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="4609.09875" y="7869.997619047619" width="132.38" height="132.38095238095238" as="geometry"/>
+                    <mxGeometry x="4575.99875" y="7869.997619047619" width="198.57" height="132.38095238095238" as="geometry"/>
                 </mxCell>
                 <mxCell id="305" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="302" target="303">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="302" value="get local file cTime and mTime&lt;br&gt;get whichever the most recent time (cmTime)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="4576.00375" y="8170.004285714285" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
+                    <mxGeometry x="4576.00375" y="8170.004285714285" width="198.57" height="99.28571428571428" as="geometry"/>
                 </mxCell>
                 <mxCell id="307" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="303" target="306">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="303" value="is cmTime &amp;gt; 0 &amp;amp;&amp;amp; cmTime &amp;gt;= dTimeLocal &amp;amp;&amp;amp; cmTime &amp;gt;= dTimeRemote" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="4608.99875" y="8439.997619047619" width="132.38" height="132.38095238095238" as="geometry"/>
+                <mxCell id="303" value="cmTime &amp;gt; 0&lt;br&gt;&amp;amp;&amp;amp;&lt;br&gt;cmTime &amp;gt;= dTimeLocal&lt;br&gt;&amp;amp;&amp;amp;&lt;br&gt;cmTime &amp;gt;= dTimeRemote" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="4576" y="8440" width="198.57" height="132.38" as="geometry"/>
                 </mxCell>
                 <mxCell id="325" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="306" target="308">
                     <mxGeometry relative="1" as="geometry"/>
@@ -761,7 +767,12 @@
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="308" value="existLocal &amp;amp;&amp;amp; existRemote?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="4608.99875" y="9009.997619047619" width="132.38" height="132.38095238095238" as="geometry"/>
+                    <mxGeometry x="4575.99875" y="9009.997619047619" width="198.57" height="132.38095238095238" as="geometry"/>
+                </mxCell>
+                <mxCell id="330" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="311">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="4675.2887500000015" y="9850.004285714285" as="targetPoint"/>
+                    </mxGeometry>
                 </mxCell>
                 <mxCell id="311" value="decision: skipFolder&lt;br&gt;decisionBranch: 14" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
                     <mxGeometry x="4576" y="9309.995238095238" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
@@ -778,13 +789,260 @@
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="312" value="existLocal || existRemote?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="4264.63875" y="9009.997619047619" width="132.38" height="132.38095238095238" as="geometry"/>
+                    <mxGeometry x="4231.53875" y="9009.997619047619" width="198.57" height="132.38095238095238" as="geometry"/>
+                </mxCell>
+                <mxCell id="329" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="318">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="4675.2887500000015" y="9850.004285714285" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="4331" y="9630"/>
+                            <mxPoint x="4675" y="9630"/>
+                        </Array>
+                    </mxGeometry>
                 </mxCell>
                 <mxCell id="318" value="decision: createFolder&lt;br&gt;decisionBranch: 15" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
                     <mxGeometry x="4231.54" y="9309.995238095238" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
                 </mxCell>
                 <mxCell id="323" value="Throw error: folder does not exist locally and remotely, but marked as kept?" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
                     <mxGeometry x="3850" y="9026.545238095237" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
+                </mxCell>
+                <mxCell id="357" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="332" target="335">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="358" value="Yes" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="357">
+                    <mxGeometry x="0.0072" y="2" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="332" value="existLocal&lt;br&gt;&amp;amp;&amp;amp;&lt;br&gt;changeLocalMTimeUsingMapping&lt;br&gt;&amp;amp;&amp;amp;&lt;br&gt;mTimeLocal &amp;gt; dTimeLocal&lt;br&gt;&amp;amp;&amp;amp;&lt;br&gt;mTimeLocal &amp;gt; dTimeRemote" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="4575.99875" y="9849.997619047619" width="198.57" height="132.38095238095238" as="geometry"/>
+                </mxCell>
+                <mxCell id="356" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="335" target="348">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="335" value="add parent folder to keptFolder" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="4576.00375" y="10150.004285714285" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
+                </mxCell>
+                <mxCell id="346" value="No" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="348" target="353">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="347" value="Yes" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="348" target="349">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="348" value="existLocal &amp;amp;&amp;amp; existRemote?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="4575.99875" y="10419.997619047619" width="198.57" height="132.38095238095238" as="geometry"/>
+                </mxCell>
+                <mxCell id="383" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="349" target="359">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="349" value="decision: skipFolder&lt;br&gt;decisionBranch: 16" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="4576" y="10719.995238095238" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
+                </mxCell>
+                <mxCell id="350" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="353" target="354">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="351" value="Yes" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="350">
+                    <mxGeometry x="0.0045" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="352" value="No" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="353" target="355">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="353" value="existLocal || existRemote?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="4231.53875" y="10419.997619047619" width="198.57" height="132.38095238095238" as="geometry"/>
+                </mxCell>
+                <mxCell id="381" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="354" target="359">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="4331" y="11060"/>
+                            <mxPoint x="4675" y="11060"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="354" value="decision: createFolder&lt;br&gt;decisionBranch: 17" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="4231.54" y="10719.995238095238" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
+                </mxCell>
+                <mxCell id="355" value="Throw error: folder does not exist locally and remotely, but marked as kept?" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="3850" y="10436.545238095237" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
+                </mxCell>
+                <mxCell id="367" value="No" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="359" target="360">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="359" value="decision available?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="4575.9887499999995" y="11289.997619047619" width="198.57" height="132.38095238095238" as="geometry"/>
+                </mxCell>
+                <mxCell id="363" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="360" target="362">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="364" value="No" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="363">
+                    <mxGeometry x="0.5516" y="2" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="365" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="360" target="361">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="366" value="Yes" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="365">
+                    <mxGeometry x="-0.131" y="1" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="360" value="dTimeLocal &amp;gt; dTimeRemote" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="4575.99875" y="11589.997619047619" width="198.57" height="132.38095238095238" as="geometry"/>
+                </mxCell>
+                <mxCell id="406" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="361" target="404">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="361" value="decision: uploadLocalDelHistToRemoteFolder&lt;br&gt;decisionBranch: 8" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="4576" y="11889.995238095238" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
+                </mxCell>
+                <mxCell id="405" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="362" target="404">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="4331" y="12210"/>
+                            <mxPoint x="4675" y="12210"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="362" value="decision: keepRemoteDelHistFolder&lt;br&gt;decisionBranch: 9" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="4231.53" y="11889.995238095238" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
+                </mxCell>
+                <mxCell id="401" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="384" target="387">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="384" value="add parent folder to keptFolder" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="4920.46375" y="7584.164285714285" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
+                </mxCell>
+                <mxCell id="392" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="387" target="390">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="399" value="Yes" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="392">
+                    <mxGeometry x="-0.0929" y="-1" relative="1" as="geometry">
+                        <mxPoint y="1" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="393" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="387" target="388">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="396" value="No" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="393">
+                    <mxGeometry x="-0.0215" y="-2" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="387" value="existLocal &amp;amp;&amp;amp; existRemote?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="4920.46875" y="7869.997619047619" width="198.57" height="132.38095238095238" as="geometry"/>
+                </mxCell>
+                <mxCell id="394" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="388" target="391">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="398" value="Yes" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="394">
+                    <mxGeometry x="-0.0792" y="-1" relative="1" as="geometry">
+                        <mxPoint y="1" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="395" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="388" target="389">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="397" value="No" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="395">
+                    <mxGeometry x="-0.1439" y="-1" relative="1" as="geometry">
+                        <mxPoint x="1" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="388" value="existLocal || existRemote?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="5259.99875" y="7869.997619047619" width="198.57" height="132.38095238095238" as="geometry"/>
+                </mxCell>
+                <mxCell id="389" value="Throw error: folder does not exist locally and remotely, but marked as kept?" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="5600" y="7886.545238095237" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
+                </mxCell>
+                <mxCell id="407" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="390" target="404">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="5020" y="12210"/>
+                            <mxPoint x="4675" y="12210"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="390" value="decision: skipFolder&lt;br&gt;decisionBranch: 10" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="4920.46" y="8170.005238095238" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
+                </mxCell>
+                <mxCell id="408" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="1" source="391">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="4675" y="12430" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="5359" y="12210"/>
+                            <mxPoint x="4675" y="12210"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="391" value="decision: createFolder&lt;br&gt;decisionBranch: 11" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="5260" y="8170.005238095238" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
+                </mxCell>
+                <mxCell id="404" value="remove folder from keptFolder" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="4576.00375" y="12430.004285714285" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
+                </mxCell>
+                <mxCell id="411" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="415" target="422">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="412" value="Yes" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="411">
+                    <mxGeometry x="-0.0929" y="-1" relative="1" as="geometry">
+                        <mxPoint y="1" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="413" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="415" target="420">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="414" value="No" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="413">
+                    <mxGeometry x="-0.0215" y="-2" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="415" value="existLocal &amp;amp;&amp;amp; existRemote?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="5940.00875" y="7584.167619047619" width="198.57" height="132.38095238095238" as="geometry"/>
+                </mxCell>
+                <mxCell id="416" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="420" target="423">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="417" value="Yes" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="416">
+                    <mxGeometry x="-0.0792" y="-1" relative="1" as="geometry">
+                        <mxPoint y="1" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="418" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="420" target="421">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="419" value="No" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="418">
+                    <mxGeometry x="-0.1439" y="-1" relative="1" as="geometry">
+                        <mxPoint x="1" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="420" value="existLocal || existRemote?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="6279.53875" y="7584.167619047619" width="198.57" height="132.38095238095238" as="geometry"/>
+                </mxCell>
+                <mxCell id="421" value="Throw error: folder does not exist locally and remotely, but marked as kept?" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="6619.54" y="7600.7152380952375" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
+                </mxCell>
+                <mxCell id="425" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="422" target="404">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="6039" y="12210"/>
+                            <mxPoint x="4675" y="12210"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="422" value="decision: skipFolder&lt;br&gt;decisionBranch: 12" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="5940" y="7884.1752380952385" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
+                </mxCell>
+                <mxCell id="426" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="423" target="404">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="6379" y="12210"/>
+                            <mxPoint x="4675" y="12210"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="423" value="decision: createFolder&lt;br&gt;decisionBranch: 13" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="6279.54" y="7884.1752380952385" width="198.57000000000002" height="99.28571428571428" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
