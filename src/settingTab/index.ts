@@ -3,56 +3,54 @@ import GoogleSavePlugin from "../main";
 import { GoogleAuth } from "../google/GoogleAuth";
 
 export class GoogleSaveSettingTab extends PluginSettingTab {
-	private plugin: GoogleSavePlugin;
-	public googleAuth: GoogleAuth;
+  public googleAuth: GoogleAuth;
 
-	constructor(app: App, plugin: GoogleSavePlugin) {
-		super(app, plugin);
+  constructor(app: App, private plugin: GoogleSavePlugin) {
+    super(app, plugin);
 
-		this.plugin = plugin;
-		this.googleAuth = new GoogleAuth(plugin);
-	}
+    this.googleAuth = this.plugin.googleAuth;
+  }
 
-	display() {
-		const { containerEl } = this;
+  display() {
+    const { containerEl } = this;
 
-		containerEl.empty();
+    containerEl.empty();
 
-		const isLoggedIn = !!this.googleAuth.getRefreshToken();
+    const isLoggedIn = !!this.googleAuth.getRefreshToken();
 
-		const GoogleAuthSetting = new Setting(containerEl)
-			.setName("Login with Google")
-			.addButton((button) => {
-				button
-					.setButtonText(isLoggedIn ? "Logout" : "Login")
-					.onClick(() => {
-						if (isLoggedIn) {
-							// do logout
-							this.googleAuth.logout();
-							return;
-						}
+    const GoogleAuthSetting = new Setting(containerEl)
+      .setName("Login with Google")
+      .addButton((button) => {
+        button
+          .setButtonText(isLoggedIn ? "Logout" : "Login")
+          .onClick(() => {
+            if (isLoggedIn) {
+              // do logout
+              this.googleAuth.logout();
+              return;
+            }
 
-						this.googleAuth.login();
-					});
-			});
+            this.googleAuth.login();
+          });
+      });
 
-		if (isLoggedIn) {
-			GoogleAuthSetting.addButton((button) => {
-				button.setButtonText("Refresh token").onClick(async () => {
-					this.googleAuth.refreshAccessToken();
+    if (isLoggedIn) {
+      GoogleAuthSetting.addButton((button) => {
+        button.setButtonText("Refresh token").onClick(async () => {
+          this.googleAuth.refreshAccessToken();
 
-					this.hide();
-					this.display();
-				});
-			});
-		}
+          this.hide();
+          this.display();
+        });
+      });
+    }
 
-		if (isLoggedIn) {
-			new Setting(containerEl).addButton((button) => {
-				button.setButtonText("Sync").onClick(() => {
-					this.plugin.fileSync.sync();
-				});
-			});
-		}
-	}
+    if (isLoggedIn) {
+      new Setting(containerEl).addButton((button) => {
+        button.setButtonText("Sync").onClick(() => {
+          this.plugin.fileSync.sync();
+        });
+      });
+    }
+  }
 }
