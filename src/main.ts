@@ -3,8 +3,7 @@ import { GoogleSavePluginSettings } from "./types";
 import { DEFAULT_SETTINGS } from "./defaultSetting";
 import { GoogleSaveSettingTab } from "./settingTab";
 import { GoogleDriveFiles } from "./google/GogleDriveFiles";
-import { Utils } from "./shared/utils";
-import { FileHandler } from "./obsidian/FileHandler";
+import { FileSync } from "./obsidian/FileSync";
 
 // Remember to rename these classes and interfaces!
 
@@ -12,7 +11,7 @@ export default class GoogleSavePlugin extends Plugin {
 	settings: GoogleSavePluginSettings;
 	settingTab: GoogleSaveSettingTab;
 	googleDriveFiles: GoogleDriveFiles;
-	fileHandler: FileHandler;
+	fileSync: FileSync;
 
 	async onload() {
 		await this.loadSettings();
@@ -90,7 +89,7 @@ export default class GoogleSavePlugin extends Plugin {
 
 		this.registerObsidianProtocols();
 
-		this.fileHandler = new FileHandler(this, this.googleDriveFiles);
+		this.fileSync = new FileSync(this, this.googleDriveFiles);
 	}
 
 	onunload() {}

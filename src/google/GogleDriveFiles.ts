@@ -145,6 +145,56 @@ export class GoogleDriveFiles {
 		return json;
 	}
 
+	public async getAllFiles(
+		folderId: string,
+		path: string,
+		pageToken?: string
+	) {
+		const files: {
+			id: string;
+			mimeType: string;
+			name: string;
+			path: string;
+		}[] = [];
+
+		const query: Record<string, string> = {
+			q: `'${folderId}' in parents`,
+		};
+
+		if (pageToken) {
+			query.pageToken = pageToken;
+		}
+
+		const { files: filesAndFolders, nextPageToken } = await this.list(
+			query
+		);
+
+		for (const file of filesAndFolders) {
+			if (file.mimeType === "application/vnd.google-apps.folder") {
+				const filesInFolder = await this.getAllFiles(
+					file.id,
+					path + "/" + file.name
+				);
+
+				files.push({
+					...file,
+					path,
+				});
+
+				files.push(...filesInFolder);
+
+				continue;
+			}
+
+			files.push({
+				...file,
+				path,
+			});
+		}
+
+		return files;
+	}
+
 	private async request({
 		pathname,
 		headers,

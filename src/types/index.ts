@@ -6,3 +6,5 @@ export type GoogleSavePluginSettings = {
 	fileReverseMap: any;
 	rootDir?: string;
 };
+
+export const METADATA_FILE = ".google-save.json";
