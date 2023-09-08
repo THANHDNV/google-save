@@ -32,6 +32,10 @@ export class FileSync {
       rootFolderId,
       "/"
     );
+
+    for (const remoteFile of files) {
+
+    }
   }
 
   private isSkippableFile(key: string) {
