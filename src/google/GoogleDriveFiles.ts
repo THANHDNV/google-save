@@ -1,4 +1,4 @@
-import { RequestUrlParam, arrayBufferToBase64, requestUrl } from "obsidian";
+import { RequestUrlParam, requestUrl } from "obsidian";
 import { GoogleAuth } from "./GoogleAuth";
 import GoogleSavePlugin from "../main";
 import { v4 as uuid } from "uuid";
@@ -6,12 +6,11 @@ import { v4 as uuid } from "uuid";
 const GOOGLE_API = "https://www.googleapis.com/";
 
 export class GoogleDriveFiles {
-  private authClient: GoogleAuth
+  private authClient: GoogleAuth;
+  private rootFolderId: string;
 
-  constructor(
-    private readonly plugin: GoogleSavePlugin,
-  ) {
-    this.authClient = this.plugin.googleAuth
+  constructor(private readonly plugin: GoogleSavePlugin) {
+    this.authClient = this.plugin.googleAuth;
   }
 
   public async list(query?: Record<string, string>) {
@@ -147,11 +146,7 @@ export class GoogleDriveFiles {
     return json;
   }
 
-  public async getAllFiles(
-    folderId: string,
-    path: string,
-    pageToken?: string
-  ) {
+  public async getAllFiles(folderId: string, path: string, pageToken?: string) {
     const files: {
       id: string;
       mimeType: string;
@@ -167,9 +162,7 @@ export class GoogleDriveFiles {
       query.pageToken = pageToken;
     }
 
-    const { files: filesAndFolders, nextPageToken } = await this.list(
-      query
-    );
+    const { files: filesAndFolders, nextPageToken } = await this.list(query);
 
     for (const file of filesAndFolders) {
       if (file.mimeType === "application/vnd.google-apps.folder") {
@@ -195,6 +188,40 @@ export class GoogleDriveFiles {
     }
 
     return files;
+  }
+
+  public async get(
+    fileId: string,
+    query: Record<string, string> = { fields: "parents" }
+  ) {
+    const { json } = await this.request({
+      pathname: `/drive/v3/files/${fileId}`,
+      query,
+    });
+
+    return json;
+  }
+
+  public async getRootFolder(name: string) {
+    if (!this.authClient.getAccessToken()) {
+      return;
+    }
+
+    if (this.rootFolderId) {
+      return this.rootFolderId;
+    }
+
+    const { json } = await this.list({
+      q: `mimeType='application/vnd.google-apps.folder' and trashed=false and name='${name}' and 'root' in parents`,
+    });
+
+    if (json.files.length === 0) {
+      return;
+    }
+
+    this.rootFolderId = json.files[0].id;
+
+    return this.rootFolderId;
   }
 
   private async request({

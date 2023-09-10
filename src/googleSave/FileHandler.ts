@@ -4,12 +4,10 @@ import GoogleSavePlugin from "../main";
 import { Utils } from "../shared/utils";
 
 export class FileHandler {
-  private googleDriveFiles: GoogleDriveFiles
+  private googleDriveFiles: GoogleDriveFiles;
 
-  constructor(
-    private readonly plugin: GoogleSavePlugin,
-  ) {
-    this.googleDriveFiles = this.plugin.googleDriveFiles
+  constructor(private readonly plugin: GoogleSavePlugin) {
+    this.googleDriveFiles = this.plugin.googleDriveFiles;
 
     this.plugin.app.workspace.onLayoutReady(() => {
       this.checkRootFolder();
@@ -22,7 +20,7 @@ export class FileHandler {
       this.plugin.settings.rootDir || this.plugin.app.vault.getName();
 
     const foundFolder = await this.googleDriveFiles.list({
-      q: `mimeType='application/vnd.google-apps.folder' and trashed=false and name='${rootDir}'`,
+      q: `mimeType='application/vnd.google-apps.folder' and trashed=false and name='${rootDir}' and 'root' in parents`,
     });
 
     if (foundFolder.files.length >= 1) {
@@ -44,31 +42,18 @@ export class FileHandler {
 
   private registerVaultEvents() {
     this.plugin.registerEvent(
-      this.plugin.app.vault.on(
-        "create",
-        this.handleCreateEvent.bind(this)
-      )
+      this.plugin.app.vault.on("create", this.handleCreateEvent.bind(this))
     );
 
-    const onModify = debounce(
-      this.handleModifyEvent.bind(this),
-      1500,
-      true
-    );
+    const onModify = debounce(this.handleModifyEvent.bind(this), 1500, true);
     this.plugin.registerEvent(this.plugin.app.vault.on("modify", onModify));
 
     this.plugin.registerEvent(
-      this.plugin.app.vault.on(
-        "delete",
-        this.handleDeleteEvent.bind(this)
-      )
+      this.plugin.app.vault.on("delete", this.handleDeleteEvent.bind(this))
     );
 
     this.plugin.registerEvent(
-      this.plugin.app.vault.on(
-        "rename",
-        this.handleRenameEvent.bind(this)
-      )
+      this.plugin.app.vault.on("rename", this.handleRenameEvent.bind(this))
     );
   }
 
@@ -88,9 +73,7 @@ export class FileHandler {
       return;
     }
 
-    const fileData = await this.plugin.app.vault.adapter.readBinary(
-      file.path
-    );
+    const fileData = await this.plugin.app.vault.adapter.readBinary(file.path);
 
     const { id } = await this.googleDriveFiles.create(
       file.name,
@@ -145,9 +128,7 @@ export class FileHandler {
   private async handleModifyEvent(file: TAbstractFile) {
     const fileId = this.getFileIdFromPath(file.path);
 
-    const fileData = await this.plugin.app.vault.adapter.readBinary(
-      file.path
-    );
+    const fileData = await this.plugin.app.vault.adapter.readBinary(file.path);
 
     const result = await this.googleDriveFiles.updateFile(fileId, fileData);
 
@@ -182,9 +163,7 @@ export class FileHandler {
   }
 
   private getFolderIdFromPath(_filePath: string = "") {
-    const filePath = _filePath?.startsWith("/")
-      ? _filePath
-      : "/" + _filePath;
+    const filePath = _filePath?.startsWith("/") ? _filePath : "/" + _filePath;
 
     const pathSplit = filePath.split("/");
     const folderPath = pathSplit.slice(0, pathSplit.length - 1).join("/");
@@ -193,9 +172,7 @@ export class FileHandler {
   }
 
   private getFileIdFromPath(_filePath: string = "") {
-    const filePath = _filePath?.startsWith("/")
-      ? _filePath
-      : "/" + _filePath;
+    const filePath = _filePath?.startsWith("/") ? _filePath : "/" + _filePath;
 
     return this.plugin.settings.fileReverseMap[filePath || "/"];
   }

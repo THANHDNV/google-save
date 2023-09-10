@@ -5,36 +5,27 @@ import { FileHandler } from "./FileHandler";
 
 export class FileSync {
   private fileHandler: FileHandler;
-  private googleDriveFiles: GoogleDriveFiles
+  private googleDriveFiles: GoogleDriveFiles;
 
-  constructor(
-    private readonly plugin: GoogleSavePlugin
-  ) {
-    this.googleDriveFiles = this.plugin.googleDriveFiles
+  constructor(private readonly plugin: GoogleSavePlugin) {
+    this.googleDriveFiles = this.plugin.googleDriveFiles;
     this.fileHandler = new FileHandler(this.plugin);
   }
 
-  public async sync() {
+  public async sync() {}
+
+  private async getRemote() {
     const rootFolderId = this.plugin.settings.fileReverseMap["/"];
 
-    const files = await this.googleDriveFiles.getAllFiles(
-      rootFolderId,
-      "/"
-    );
-
-    console.log(files);
+    const files = await this.googleDriveFiles.getAllFiles(rootFolderId, "/");
   }
 
   private async asssembleFileStates() {
     const rootFolderId = this.plugin.settings.fileReverseMap["/"];
 
-    const files = await this.googleDriveFiles.getAllFiles(
-      rootFolderId,
-      "/"
-    );
+    const files = await this.googleDriveFiles.getAllFiles(rootFolderId, "/");
 
     for (const remoteFile of files) {
-
     }
   }
 
