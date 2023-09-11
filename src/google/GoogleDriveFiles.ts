@@ -146,16 +146,27 @@ export class GoogleDriveFiles {
     return json;
   }
 
-  public async getAllFiles(folderId: string, path: string, pageToken?: string) {
-    const files: {
+  public async getAllFiles(
+    folderId: string,
+    path: string,
+    pageToken?: string,
+    files: {
       id: string;
       mimeType: string;
       name: string;
       path: string;
-    }[] = [];
-
+    }[] = []
+  ): Promise<
+    {
+      id: string;
+      mimeType: string;
+      name: string;
+      path: string;
+    }[]
+  > {
     const query: Record<string, string> = {
       q: `'${folderId}' in parents`,
+      pageSize: "3",
     };
 
     if (pageToken) {
@@ -168,7 +179,7 @@ export class GoogleDriveFiles {
       if (file.mimeType === "application/vnd.google-apps.folder") {
         const filesInFolder = await this.getAllFiles(
           file.id,
-          path + "/" + file.name
+          (path.endsWith("/") ? path : path + "/") + file.name
         );
 
         files.push({
@@ -185,6 +196,10 @@ export class GoogleDriveFiles {
         ...file,
         path,
       });
+    }
+
+    if (nextPageToken) {
+      return this.getAllFiles(folderId, path, nextPageToken, files);
     }
 
     return files;
