@@ -1,3 +1,16 @@
+export interface RemoteFile {
+  id: string;
+  mimeType: string;
+  name: string;
+  path: string;
+
+  /** Date */
+  modifiedTime: string;
+
+  /** Number, size in bytes */
+  size: string;
+}
+
 export enum DecisionTypeForFile {
   SKIP_UPLOADING = "skipUploading",
   UPLOAD_LOCAL_DELETE_HISTORY_TO_REMOTE = "uploadLocalDelHistToRemote",

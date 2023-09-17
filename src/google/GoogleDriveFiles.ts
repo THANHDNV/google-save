@@ -2,6 +2,7 @@ import { RequestUrlParam, requestUrl } from "obsidian";
 import { GoogleAuth } from "./GoogleAuth";
 import GoogleSavePlugin from "../main";
 import { v4 as uuid } from "uuid";
+import { RemoteFile } from "../types/file";
 
 const GOOGLE_API = "https://www.googleapis.com/";
 
@@ -72,8 +73,6 @@ export class GoogleDriveFiles {
       parents: parentId ? [parentId] : undefined,
       mimeType,
     };
-
-    console.log(body);
 
     const { json } = await this.request({
       pathname: "/drive/v3/files",
@@ -149,24 +148,13 @@ export class GoogleDriveFiles {
   public async getAllFiles(
     folderId: string,
     path: string,
-    pageToken?: string,
-    files: {
-      id: string;
-      mimeType: string;
-      name: string;
-      path: string;
-    }[] = []
-  ): Promise<
-    {
-      id: string;
-      mimeType: string;
-      name: string;
-      path: string;
-    }[]
-  > {
+    pageToken?: string
+  ): Promise<RemoteFile[]> {
+    const files: RemoteFile[] = [];
+
     const query: Record<string, string> = {
-      q: `'${folderId}' in parents`,
-      pageSize: "3",
+      q: `'${folderId}' in parents and trashed=false`,
+      fields: "files(id,name,mimeType,modifiedTime,size)",
     };
 
     if (pageToken) {
@@ -176,30 +164,25 @@ export class GoogleDriveFiles {
     const { files: filesAndFolders, nextPageToken } = await this.list(query);
 
     for (const file of filesAndFolders) {
+      files.push({
+        ...file,
+        path,
+      });
+
       if (file.mimeType === "application/vnd.google-apps.folder") {
         const filesInFolder = await this.getAllFiles(
           file.id,
           (path.endsWith("/") ? path : path + "/") + file.name
         );
 
-        files.push({
-          ...file,
-          path,
-        });
-
         files.push(...filesInFolder);
 
         continue;
       }
-
-      files.push({
-        ...file,
-        path,
-      });
     }
 
     if (nextPageToken) {
-      return this.getAllFiles(folderId, path, nextPageToken, files);
+      files.push(...(await this.getAllFiles(folderId, path, nextPageToken)));
     }
 
     return files;
@@ -218,7 +201,8 @@ export class GoogleDriveFiles {
   }
 
   public async getRootFolder(name: string) {
-    if (!this.authClient.getAccessToken()) {
+    const accessToken = await this.authClient.getAccessToken();
+    if (!accessToken) {
       return;
     }
 
@@ -226,7 +210,7 @@ export class GoogleDriveFiles {
       return this.rootFolderId;
     }
 
-    const { json } = await this.list({
+    const json = await this.list({
       q: `mimeType='application/vnd.google-apps.folder' and trashed=false and name='${name}' and 'root' in parents`,
     });
 
