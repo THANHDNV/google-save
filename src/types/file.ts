@@ -67,9 +67,6 @@ export interface FileOrFolderMixedState {
   /** remote size */
   sizeRemote?: number;
 
-  changeRemoteMtimeUsingMapping?: boolean;
-  changeLocalMtimeUsingMapping?: boolean;
-
   /** how should file be handled */
   decision?: DecisionType;
 

@@ -4,6 +4,7 @@ import GoogleSavePlugin from "../main";
 import { METADATA_FILE } from "../types";
 import { FileHandler } from "./FileHandler";
 import { FileOrFolderMixedState, RemoteFile } from "../types/file";
+import { MetadataOnRemote } from "../types/metadata";
 
 export class FileSync {
   private fileHandler: FileHandler;
@@ -26,7 +27,11 @@ export class FileSync {
       remoteFiles
     );
 
-    const localFiles = await this.getLocal();
+    const metadataOnRemote = await this.getRemoteMetadataFile(
+      metadataFile?.remoteKey
+    );
+
+    // const localFiles = await this.getLocal();
 
     // console.log(remoteFiles);
     // console.log(localFiles);
@@ -64,15 +69,12 @@ export class FileSync {
         `${remoteFile.path}/${remoteFile.name}`
       );
 
-      // TODO: consider mapping the remote file to file index in local db
-
       const file: FileOrFolderMixedState = {
         key: fileFullPath,
         remoteKey: remoteFile.id,
         existRemote: true,
         mtimeRemote: new Date(remoteFile.modifiedTime).getTime(),
         sizeRemote: parseInt(remoteFile.size),
-        changeRemoteMtimeUsingMapping: false,
       };
 
       remoteStates.push(file);
@@ -97,6 +99,34 @@ export class FileSync {
         ...(await this.vault.adapter.stat(localFile.path)),
       }))
     );
+  }
+
+  private async getRemoteMetadataFile(
+    metadataFileId?: string
+  ): Promise<MetadataOnRemote> {
+    if (!metadataFileId) {
+      return {
+        deletions: [],
+      };
+    }
+
+    const metaDataFileContentArrayBuffer = await this.googleDriveFiles.get(
+      metadataFileId,
+      true
+    );
+
+    const metadataFileContent = Buffer.from(
+      metaDataFileContentArrayBuffer
+    ).toString("utf-8");
+    const metadataFile = JSON.parse(metadataFileContent) as MetadataOnRemote;
+
+    return metadataFile;
+  }
+
+  private async assembleMixedStates(): Promise<
+    Record<string, FileOrFolderMixedState>
+  > {
+    return {};
   }
 
   private isSkippableFile(key: string) {

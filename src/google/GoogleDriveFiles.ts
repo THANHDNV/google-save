@@ -120,8 +120,6 @@ export class GoogleDriveFiles {
 
     const contentType = "application/octet-stream";
 
-    let contentBuffer;
-
     const body = `--${boundary}\r\ncontent-type: application/json\r\n\r\n${JSON.stringify(
       {
         mimeType: contentType,
@@ -188,16 +186,15 @@ export class GoogleDriveFiles {
     return files;
   }
 
-  public async get(
-    fileId: string,
-    query: Record<string, string> = { fields: "parents" }
-  ) {
-    const { json } = await this.request({
+  public async get(fileId: string, getContent?: boolean): Promise<any> {
+    const result = await this.request({
       pathname: `/drive/v3/files/${fileId}`,
-      query,
+      query: getContent ? { alt: "media" } : undefined,
     });
 
-    return json;
+    if (getContent) return result.arrayBuffer;
+
+    return result.json;
   }
 
   public async getRootFolder(name: string) {
