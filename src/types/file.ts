@@ -1,3 +1,6 @@
+import { Stat, TAbstractFile } from "obsidian";
+import { DeletionOnRemote } from "./metadata";
+
 export interface RemoteFile {
   id: string;
   mimeType: string;
@@ -28,12 +31,15 @@ export enum DecisionTypeForFolder {
 
 export type DecisionType = DecisionTypeForFile | DecisionTypeForFolder;
 
+export const GoogleDriveApplicationMimeType =
+  "application/vnd.google-apps.folder";
+
 export interface FileOrFolderMixedState {
   /** file or folder path */
   key: string;
 
   /** remote uuid */
-  remoteKey: string;
+  remoteKey?: string;
 
   /** file exist local or not */
   existLocal?: boolean;
@@ -76,3 +82,9 @@ export interface FileOrFolderMixedState {
   /** mark file as sync from/to remote */
   syncDone?: boolean;
 }
+
+export type AssembleMixedStatesArgs = {
+  localFiles: Array<TAbstractFile>;
+  remoteFileStates: FileOrFolderMixedState[];
+  remoteDeleteFiles: DeletionOnRemote[];
+};

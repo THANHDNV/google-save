@@ -2,6 +2,7 @@ import { TAbstractFile, TFile, TFolder, debounce } from "obsidian";
 import { GoogleDriveFiles } from "../google/GoogleDriveFiles";
 import GoogleSavePlugin from "../main";
 import { Utils } from "../shared/utils";
+import { GoogleDriveApplicationMimeType } from "../types/file";
 
 export class FileHandler {
   private googleDriveFiles: GoogleDriveFiles;
@@ -20,7 +21,7 @@ export class FileHandler {
       this.plugin.settings.rootDir || this.plugin.app.vault.getName();
 
     const foundFolder = await this.googleDriveFiles.list({
-      q: `mimeType='application/vnd.google-apps.folder' and trashed=false and name='${rootDir}' and 'root' in parents`,
+      q: `mimeType='${GoogleDriveApplicationMimeType}' and trashed=false and name='${rootDir}' and 'root' in parents`,
     });
 
     if (foundFolder.files.length >= 1) {

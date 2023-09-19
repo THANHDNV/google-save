@@ -1,9 +1,14 @@
-import { Vault, normalizePath } from "obsidian";
+import { TFile, TFolder, Vault, normalizePath } from "obsidian";
 import { GoogleDriveFiles } from "../google/GoogleDriveFiles";
 import GoogleSavePlugin from "../main";
 import { METADATA_FILE } from "../types";
 import { FileHandler } from "./FileHandler";
-import { FileOrFolderMixedState, RemoteFile } from "../types/file";
+import {
+  AssembleMixedStatesArgs,
+  FileOrFolderMixedState,
+  GoogleDriveApplicationMimeType,
+  RemoteFile,
+} from "../types/file";
 import { MetadataOnRemote } from "../types/metadata";
 
 export class FileSync {
@@ -18,10 +23,6 @@ export class FileSync {
   }
 
   public async sync() {
-    await this.asssembleFileStates();
-  }
-
-  private async asssembleFileStates() {
     const remoteFiles = await this.getRemote();
     const { remoteStates, metadataFile } = await this.parseRemoteFiles(
       remoteFiles
@@ -31,10 +32,10 @@ export class FileSync {
       metadataFile?.remoteKey
     );
 
-    // const localFiles = await this.getLocal();
+    const localFiles = await this.getLocal();
 
-    // console.log(remoteFiles);
-    // console.log(localFiles);
+    console.log(remoteStates);
+    console.log(localFiles);
   }
 
   private async getRemote() {
@@ -65,16 +66,19 @@ export class FileSync {
     let metadataFile: FileOrFolderMixedState | undefined = undefined;
 
     for (const remoteFile of remoteFiles) {
-      const fileFullPath = normalizePath(
-        `${remoteFile.path}/${remoteFile.name}`
-      );
+      const isFolder = remoteFile.mimeType === GoogleDriveApplicationMimeType;
+      let fileFullPath = normalizePath(`${remoteFile.path}/${remoteFile.name}`);
+
+      if (isFolder) {
+        fileFullPath = `${fileFullPath}/`;
+      }
 
       const file: FileOrFolderMixedState = {
         key: fileFullPath,
         remoteKey: remoteFile.id,
         existRemote: true,
         mtimeRemote: new Date(remoteFile.modifiedTime).getTime(),
-        sizeRemote: parseInt(remoteFile.size),
+        sizeRemote: isFolder ? 0 : parseInt(remoteFile.size),
       };
 
       remoteStates.push(file);
@@ -93,12 +97,13 @@ export class FileSync {
   private async getLocal() {
     const files = this.vault.getAllLoadedFiles();
 
-    return Promise.all(
-      files.map(async (localFile) => ({
-        ...localFile,
-        ...(await this.vault.adapter.stat(localFile.path)),
-      }))
-    );
+    // return Promise.all(
+    //   files.map(async (localFile) => ({
+    //     ...localFile,
+    //     ...(await this.vault.adapter.stat(localFile.path)),
+    //   }))
+    // );
+    return files;
   }
 
   private async getRemoteMetadataFile(
@@ -123,10 +128,105 @@ export class FileSync {
     return metadataFile;
   }
 
-  private async assembleMixedStates(): Promise<
-    Record<string, FileOrFolderMixedState>
-  > {
-    return {};
+  private async assembleMixedStates({
+    remoteFileStates,
+    localFiles,
+    remoteDeleteFiles,
+  }: AssembleMixedStatesArgs): Promise<Record<string, FileOrFolderMixedState>> {
+    const result: Record<string, FileOrFolderMixedState> = {};
+
+    for (const remoteFileState of remoteFileStates) {
+      const key = remoteFileState.key;
+      if (this.isSkippableFile(key)) {
+        continue;
+      }
+
+      result[key] = remoteFileState;
+      result[key].existLocal = false;
+    }
+
+    for (const localFile of localFiles) {
+      const key = localFile.path;
+
+      if (this.isSkippableFile(key)) {
+        continue;
+      }
+
+      if (localFile.path === "/") {
+        continue;
+      }
+
+      let r: FileOrFolderMixedState | null = null;
+
+      if (localFile instanceof TFile) {
+        const mtimeLocal = Math.max(
+          localFile.stat.mtime ?? 0,
+          localFile.stat.ctime ?? 0
+        );
+
+        r = {
+          key,
+          existLocal: true,
+          mtimeLocal,
+          sizeLocal: localFile.stat.size,
+        };
+      }
+
+      if (localFile instanceof TFolder) {
+        r = {
+          key: `${key}/`,
+          existLocal: true,
+          sizeLocal: 0,
+        };
+      }
+
+      if (!r) {
+        throw new Error("Unknown file type");
+      }
+
+      if (result[key]) {
+        result[key] = {
+          ...result[key],
+          ...r,
+        };
+      } else {
+        result[key] = {
+          ...r,
+          existRemote: true,
+        };
+      }
+
+      // result[key] = localFile;
+      // result[key].existLocal = true;
+    }
+
+    for (const remoteDelete of remoteDeleteFiles) {
+      const key = remoteDelete.key;
+
+      const r: FileOrFolderMixedState = {
+        key,
+        deltimeRemote: remoteDelete.actionWhen,
+      };
+
+      if (this.isSkippableFile(key)) {
+        continue;
+      }
+
+      if (result[key]) {
+        result[key] = {
+          ...result[key],
+          ...r,
+        };
+      } else {
+        result[key] = {
+          ...r,
+          existLocal: false,
+          existRemote: false,
+        };
+      }
+    }
+
+    return result;
   }
 
   private isSkippableFile(key: string) {

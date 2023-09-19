@@ -2,7 +2,7 @@ import { RequestUrlParam, requestUrl } from "obsidian";
 import { GoogleAuth } from "./GoogleAuth";
 import GoogleSavePlugin from "../main";
 import { v4 as uuid } from "uuid";
-import { RemoteFile } from "../types/file";
+import { GoogleDriveApplicationMimeType, RemoteFile } from "../types/file";
 
 const GOOGLE_API = "https://www.googleapis.com/";
 
@@ -66,7 +66,7 @@ export class GoogleDriveFiles {
   }
 
   public async createFolder(folderName: string, parentId?: string) {
-    const mimeType = "application/vnd.google-apps.folder";
+    const mimeType = GoogleDriveApplicationMimeType;
 
     const body = {
       name: folderName,
@@ -167,7 +167,7 @@ export class GoogleDriveFiles {
         path,
       });
 
-      if (file.mimeType === "application/vnd.google-apps.folder") {
+      if (file.mimeType === GoogleDriveApplicationMimeType) {
         const filesInFolder = await this.getAllFiles(
           file.id,
           (path.endsWith("/") ? path : path + "/") + file.name
@@ -208,7 +208,7 @@ export class GoogleDriveFiles {
     }
 
     const json = await this.list({
-      q: `mimeType='application/vnd.google-apps.folder' and trashed=false and name='${name}' and 'root' in parents`,
+      q: `mimeType='${GoogleDriveApplicationMimeType}' and trashed=false and name='${name}' and 'root' in parents`,
     });
 
     if (json.files.length === 0) {
