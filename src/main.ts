@@ -17,7 +17,7 @@ export default class GoogleSavePlugin extends Plugin {
 
   async onload() {
     await this.loadSettings();
-    this.googleAuth = new GoogleAuth(this)
+    this.googleAuth = new GoogleAuth(this);
 
     // This creates an icon in the left ribbon.
     // const ribbonIconEl = this.addRibbonIcon("dice", "Greet", () => {
@@ -85,16 +85,14 @@ export default class GoogleSavePlugin extends Plugin {
     // 	}, 5 * 60 * 1000)
     // );
 
-    this.googleDriveFiles = new GoogleDriveFiles(
-      this,
-    );
+    this.googleDriveFiles = new GoogleDriveFiles(this);
 
     this.registerObsidianProtocols();
 
     this.fileSync = new FileSync(this);
   }
 
-  onunload() { }
+  onunload() {}
 
   private registerObsidianProtocols() {
     this.registerObsidianProtocolHandler("googleLogin", (query: any) => {
@@ -103,11 +101,7 @@ export default class GoogleSavePlugin extends Plugin {
   }
 
   async loadSettings() {
-    this.settings = Object.assign(
-      {},
-      DEFAULT_SETTINGS,
-      await this.loadData()
-    );
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
   }
 
   async saveSettings() {

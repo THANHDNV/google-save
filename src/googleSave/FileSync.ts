@@ -10,6 +10,7 @@ import {
   RemoteFile,
 } from "../types/file";
 import { MetadataOnRemote } from "../types/metadata";
+import { FileFolderHistoryActionType } from "../types/database";
 
 export class FileSync {
   private fileHandler: FileHandler;
@@ -128,10 +129,13 @@ export class FileSync {
     return metadataFile;
   }
 
+  private async getSycnPlan() {}
+
   private async assembleMixedStates({
     remoteFileStates,
     localFiles,
     remoteDeleteFiles,
+    localFileHistory,
   }: AssembleMixedStatesArgs): Promise<Record<string, FileOrFolderMixedState>> {
     const result: Record<string, FileOrFolderMixedState> = {};
 
@@ -195,9 +199,6 @@ export class FileSync {
           existRemote: true,
         };
       }
-
-      // result[key] = localFile;
-      // result[key].existLocal = true;
     }
 
     for (const remoteDelete of remoteDeleteFiles) {
@@ -223,6 +224,74 @@ export class FileSync {
           existLocal: false,
           existRemote: false,
         };
+      }
+    }
+
+    for (const fileHistory of localFileHistory) {
+      let key = fileHistory.key;
+
+      if (fileHistory.keyType === "folder") {
+        if (!fileHistory.key.endsWith("/")) {
+          key = `${fileHistory.key}/`;
+        }
+      }
+
+      if (this.isSkippableFile(key)) {
+        continue;
+      }
+
+      switch (fileHistory.actionType) {
+        case FileFolderHistoryActionType.DELETE:
+        case FileFolderHistoryActionType.RENAME:
+          {
+            const r: FileOrFolderMixedState = {
+              key,
+              deltimeLocal: fileHistory.actionWhen,
+            };
+
+            if (result[key]) {
+              result[key] = {
+                ...result[key],
+                ...r,
+              };
+            } else {
+              result[key] = {
+                ...r,
+                existLocal: false,
+                existRemote: false,
+              };
+            }
+          }
+          break;
+        case FileFolderHistoryActionType.RENAME_DESTINATION:
+          {
+            const r: FileOrFolderMixedState = {
+              key,
+              mtimeLocal: fileHistory.actionWhen,
+              changeLocalMtimeUsingMapping: true,
+            };
+
+            if (result[key]) {
+              let mtimeLocal: number | undefined = Math.max(
+                r.mtimeLocal ?? 0,
+                result[key].mtimeLocal ?? 0
+              );
+              if (Number.isNaN(mtimeLocal) || mtimeLocal === 0) {
+                mtimeLocal = undefined;
+              }
+
+              result[key] = {
+                ...result[key],
+                ...r,
+                mtimeLocal,
+              };
+            }
+          }
+          break;
+        default:
+          throw new Error(
+            `Unknown action type ${fileHistory.actionType} file ${fileHistory.key}`
+          );
       }
     }
 

@@ -1,5 +1,6 @@
 import { Stat, TAbstractFile } from "obsidian";
 import { DeletionOnRemote } from "./metadata";
+import { FileFolderHistoryRecord } from "./database";
 
 export interface RemoteFile {
   id: string;
@@ -81,10 +82,13 @@ export interface FileOrFolderMixedState {
 
   /** mark file as sync from/to remote */
   syncDone?: boolean;
+
+  changeLocalMtimeUsingMapping?: boolean;
 }
 
 export type AssembleMixedStatesArgs = {
   localFiles: Array<TAbstractFile>;
   remoteFileStates: FileOrFolderMixedState[];
   remoteDeleteFiles: DeletionOnRemote[];
+  localFileHistory: FileFolderHistoryRecord[];
 };
