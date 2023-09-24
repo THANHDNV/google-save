@@ -13,10 +13,12 @@ import {
   AssembleMixedStatesArgs,
   DecisionTypeForFile,
   DecisionTypeForFolder,
+  DoActualSyncArgs,
   FileOrFolderMixedState,
   GetSyncPlanArgs,
   GoogleDriveApplicationMimeType,
   RemoteFile,
+  SyncTriggerSourceType,
 } from "../types/file";
 import { DeletionOnRemote, MetadataOnRemote } from "../types/metadata";
 import { FileFolderHistoryActionType } from "../types/database";
@@ -36,7 +38,7 @@ export class FileSync {
     this.db = this.plugin.db;
   }
 
-  public async sync() {
+  public async sync(syncTriggerSource?: SyncTriggerSourceType) {
     const remoteFiles = await this.getRemote();
     const { remoteStates, metadataFile } = await this.parseRemoteFiles(
       remoteFiles
@@ -49,8 +51,16 @@ export class FileSync {
     const localFiles = await this.getLocal();
 
     const localFileHistory = await this.db.fileHistory.getAll();
-    console.log(remoteStates);
-    console.log(localFiles);
+
+    const syncPlan = await this.getSyncPlan({
+      localFileHistory: Object.values(localFileHistory),
+      localFiles,
+      remoteDeleteFiles: metadataOnRemote.deletions || [],
+      remoteFileStates: remoteStates,
+      syncTriggerSource,
+    });
+
+    console.log(syncPlan);
   }
 
   private async getRemote() {
@@ -137,11 +147,12 @@ export class FileSync {
     return metadataFile;
   }
 
-  private async getSycnPlan({
+  private async getSyncPlan({
     remoteFileStates,
     localFiles,
     remoteDeleteFiles,
     localFileHistory,
+    syncTriggerSource,
   }: GetSyncPlanArgs) {
     const mixedStates = await this.assembleMixedStates({
       remoteFileStates,
@@ -154,7 +165,6 @@ export class FileSync {
       (k1, k2) => k2.length - k1.length
     );
 
-    const sizesGoWrong: FileOrFolderMixedState[] = [];
     const deletions: DeletionOnRemote[] = [];
 
     const keptFolder = new Set<string>();
@@ -163,9 +173,60 @@ export class FileSync {
       const val = mixedStates[key];
 
       if (key.endsWith("/")) {
+        mixedStates[key] = await this.assignOperationToFolder(val, keptFolder);
       } else {
+        mixedStates[key] = await this.assignOperationToFile(val, keptFolder);
+      }
+
+      let actionWhen: number | undefined = undefined;
+
+      if (
+        mixedStates[key].decision ===
+        DecisionTypeForFile.UPLOAD_LOCAL_DELETE_HISTORY_TO_REMOTE
+      ) {
+        actionWhen = mixedStates[key].deltimeLocal;
+      }
+
+      if (
+        mixedStates[key].decision ===
+        DecisionTypeForFile.KEEP_REMOTE_DELETE_HISTORY
+      ) {
+        actionWhen = mixedStates[key].deltimeRemote;
+      }
+
+      if (
+        mixedStates[key].decision ===
+        DecisionTypeForFolder.UPLOAD_LOCAL_DELETE_HISTORY_TO_REMOTE_FOLDER
+      ) {
+        actionWhen = mixedStates[key].deltimeLocal;
+      }
+
+      if (
+        mixedStates[key].decision ===
+        DecisionTypeForFolder.KEEP_REMOTE_DELETE_HISTORY_FOLDER
+      ) {
+        actionWhen = mixedStates[key].deltimeRemote;
+      }
+
+      if (actionWhen) {
+        deletions.push({
+          key,
+          actionWhen,
+        });
       }
     }
+
+    const currTs = Date.now();
+    const plan = {
+      ts: Date.now(),
+      syncTriggerSource,
+      mixedStates,
+    };
+    return {
+      plan: plan,
+      sortedKeys: sortedKeys,
+      deletions: deletions,
+    };
   }
 
   private async assembleMixedStates({
@@ -451,6 +512,8 @@ export class FileSync {
         );
       }
     }
+
+    return r;
   }
 
   private async assignOperationToFile(
@@ -600,5 +663,30 @@ export class FileSync {
     }
 
     throw Error(`no decision for ${JSON.stringify(r)}`);
+  }
+
+  private async doActualSync({
+    syncPlan,
+    sortedKeys,
+    metadataFile,
+    origMetadata,
+    sizesGoWrong,
+    deletions,
+    concurrency = 1,
+  }: DoActualSyncArgs) {
+    const mixedStates = syncPlan.mixedStates;
+    const totalCount = sortedKeys.length || 0;
+
+    await uploadExtraMeta({
+      metadataFile,
+      origMetadata,
+      deletions,
+    });
+
+    for (const key of sortedKeys) {
+      const val = mixedStates[key];
+
+      await dispatchOperationToActual({ key, val });
+    }
   }
 }

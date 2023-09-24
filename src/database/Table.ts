@@ -4,9 +4,9 @@ import { DATABASE_NAME } from "../types/database";
 export class GoogleSaveDbTable<T = any> {
   private readonly table: LocalForage;
 
-  constructor(name: string) {
+  constructor(name: string, vaultId?: string) {
     this.table = localforage.createInstance({
-      name: DATABASE_NAME,
+      name: vaultId ? `${vaultId}/${DATABASE_NAME}` : DATABASE_NAME,
       storeName: name,
     });
   }
@@ -23,34 +23,19 @@ export class GoogleSaveDbTable<T = any> {
     return this.table.removeItem(key);
   }
 
-  getAll(): Promise<
-    {
-      key: string;
-      value: T;
-    }[]
-  > {
+  getAll(): Promise<Record<string, T>> {
     return this.table.keys().then((keys) =>
-      keys.reduce<
-        Promise<
-          {
-            key: string;
-            value: T;
-          }[]
-        >
-      >(async (listPromise, key) => {
+      keys.reduce<Promise<Record<string, T>>>(async (listPromise, key) => {
         const list = await listPromise;
 
         const value = await this.get(key);
 
         if (value) {
-          list.push({
-            key,
-            value,
-          });
+          list[key] = value;
         }
 
         return list;
-      }, Promise.resolve([]))
+      }, Promise.resolve({}))
     );
   }
 

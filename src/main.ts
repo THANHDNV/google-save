@@ -6,6 +6,7 @@ import { GoogleDriveFiles } from "./google/GoogleDriveFiles";
 import { FileSync } from "./googleSave/FileSync";
 import { GoogleAuth } from "./google/GoogleAuth";
 import { GoogleSaveDb } from "./database";
+import { v4 as uuid } from "uuid";
 
 // Remember to rename these classes and interfaces!
 
@@ -19,8 +20,10 @@ export default class GoogleSavePlugin extends Plugin {
 
   async onload() {
     await this.loadSettings();
+    await this.generateVaultRandomIdIfNeeded();
+
     this.googleAuth = new GoogleAuth(this);
-    this.db = new GoogleSaveDb();
+    this.db = new GoogleSaveDb(this.settings.vaultId);
 
     // This creates an icon in the left ribbon.
     // const ribbonIconEl = this.addRibbonIcon("dice", "Greet", () => {
@@ -101,6 +104,18 @@ export default class GoogleSavePlugin extends Plugin {
     this.registerObsidianProtocolHandler("googleLogin", (query: any) => {
       this.settingTab.googleAuth.handleLoginResponse({ ...query });
     });
+  }
+
+  private async generateVaultRandomIdIfNeeded(): Promise<string> {
+    let id = this.settings.vaultId;
+
+    if (!id) {
+      id = uuid();
+      this.settings.vaultId = id;
+      await this.saveSettings();
+    }
+
+    return id;
   }
 
   async loadSettings() {

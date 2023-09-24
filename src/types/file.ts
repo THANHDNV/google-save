@@ -1,5 +1,5 @@
 import { Stat, TAbstractFile } from "obsidian";
-import { DeletionOnRemote } from "./metadata";
+import { DeletionOnRemote, MetadataOnRemote } from "./metadata";
 import { FileFolderHistoryRecord } from "./database";
 
 export interface RemoteFile {
@@ -91,6 +91,7 @@ export type GetSyncPlanArgs = {
   remoteFileStates: FileOrFolderMixedState[];
   remoteDeleteFiles: DeletionOnRemote[];
   localFileHistory: FileFolderHistoryRecord[];
+  syncTriggerSource?: SyncTriggerSourceType;
 };
 
 export type AssembleMixedStatesArgs = {
@@ -98,4 +99,26 @@ export type AssembleMixedStatesArgs = {
   remoteFileStates: FileOrFolderMixedState[];
   remoteDeleteFiles: DeletionOnRemote[];
   localFileHistory: FileFolderHistoryRecord[];
+};
+
+export enum SyncTriggerSourceType {
+  MANUAL = "manual",
+  AUTO = "auto",
+  AUTO_ONCE_INIT = "auto_once_init",
+}
+
+export type SyncPlanType = {
+  ts: number;
+  syncTriggerSource?: SyncTriggerSourceType;
+  mixedStates: Record<string, FileOrFolderMixedState>;
+};
+
+export type DoActualSyncArgs = {
+  syncPlan: SyncPlanType;
+  sortedKeys: string[];
+  metadataFile: FileOrFolderMixedState;
+  origMetadata: MetadataOnRemote;
+  sizesGoWrong: FileOrFolderMixedState[];
+  deletions: DeletionOnRemote[];
+  concurrency: number;
 };

@@ -4,9 +4,10 @@ import { GoogleSaveDbTable } from "./Table";
 export class GoogleSaveDb {
   public readonly fileHistory: GoogleSaveDbTable<FileFolderHistoryRecord>;
 
-  constructor() {
+  constructor(vaultId?: string) {
     this.fileHistory = new GoogleSaveDbTable<FileFolderHistoryRecord>(
-      TABLE.FILE_HISTORY
+      TABLE.FILE_HISTORY,
+      vaultId
     );
   }
 }
