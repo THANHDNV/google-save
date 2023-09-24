@@ -11,6 +11,7 @@ import { METADATA_FILE } from "../types";
 import { FileHandler } from "./FileHandler";
 import {
   AssembleMixedStatesArgs,
+  DecisionTypeForFile,
   DecisionTypeForFolder,
   FileOrFolderMixedState,
   GetSyncPlanArgs,
@@ -452,5 +453,152 @@ export class FileSync {
     }
   }
 
-  private async assignOperationToFile() {}
+  private async assignOperationToFile(
+    originRecord: FileOrFolderMixedState,
+    keptFolder: Set<string>
+  ) {
+    const r: FileOrFolderMixedState = {
+      ...originRecord,
+    };
+
+    if (r.key.endsWith("/")) {
+      return r;
+    }
+
+    if (r.existLocal && (r.mtimeLocal === undefined || r.mtimeLocal <= 0)) {
+      throw Error(
+        `Error: Abnormal last modified time locally: ${JSON.stringify(
+          r,
+          null,
+          2
+        )}`
+      );
+    }
+    if (r.existRemote && (r.mtimeRemote === undefined || r.mtimeRemote <= 0)) {
+      throw Error(
+        `Error: Abnormal last modified time remotely: ${JSON.stringify(
+          r,
+          null,
+          2
+        )}`
+      );
+    }
+    if (r.deltimeLocal !== undefined && r.deltimeLocal <= 0) {
+      throw Error(
+        `Error: Abnormal deletion time locally: ${JSON.stringify(r, null, 2)}`
+      );
+    }
+    if (r.deltimeRemote !== undefined && r.deltimeRemote <= 0) {
+      throw Error(
+        `Error: Abnormal deletion time remotely: ${JSON.stringify(r, null, 2)}`
+      );
+    }
+
+    const sizeLocalComp = r.sizeLocal;
+    const sizeRemoteComp = r.sizeRemote;
+
+    const mtimeRemote = r.existRemote ? r.mtimeRemote ?? 0 : 0;
+    const deltimeRemote = r.deltimeRemote !== undefined ? r.deltimeRemote : 0;
+    const deltimeLocal = r.deltimeLocal !== undefined ? r.deltimeLocal : 0;
+    const mtimeLocal = r.existLocal ? r.mtimeLocal ?? 0 : 0;
+
+    // 1. mtimeLocal
+    if (r.existLocal) {
+      if (
+        mtimeLocal >= mtimeRemote &&
+        mtimeLocal >= deltimeLocal &&
+        mtimeLocal >= deltimeRemote
+      ) {
+        if (r.sizeLocal === undefined) {
+          throw new Error(
+            `Error: no local size but has local mtime: ${JSON.stringify(
+              r,
+              null,
+              2
+            )}`
+          );
+        }
+
+        if (r.mtimeLocal === r.mtimeRemote) {
+          // local and remote both exist and mtimes are the same
+          if (r.sizeLocal === sizeRemoteComp) {
+            // do not need to consider skipSizeLargerThan in this case
+            r.decision = DecisionTypeForFile.SKIP_UPLOADING;
+            r.decisionBranch = 1;
+          } else {
+            r.decision = DecisionTypeForFile.UPLOAD_LOCAL_TO_REMOTE;
+            r.decisionBranch = 2;
+          }
+        } else {
+          // we have local laregest mtime,
+          // and the remote not existing or smaller mtime
+          r.decision = DecisionTypeForFile.UPLOAD_LOCAL_TO_REMOTE;
+          r.decisionBranch = 4;
+        }
+        keptFolder.add(Utils.getParentFolder(r.key));
+        return r;
+      }
+    }
+
+    // 2. mtimeRemote
+    if (r.existRemote) {
+      if (
+        mtimeRemote > mtimeLocal &&
+        mtimeRemote >= deltimeLocal &&
+        mtimeRemote >= deltimeRemote
+      ) {
+        // we have remote laregest mtime,
+        // and the local not existing or smaller mtime
+        if (sizeRemoteComp === undefined) {
+          throw new Error(
+            `Error: no remote size but has remote mtime: ${JSON.stringify(
+              r,
+              null,
+              2
+            )}`
+          );
+        }
+
+        r.decision = DecisionTypeForFile.DOWNLOAD_REMOTE_TO_LOCAL;
+        r.decisionBranch = 5;
+
+        keptFolder.add(Utils.getParentFolder(r.key));
+        return r;
+      }
+    }
+
+    // 3. deltimeLocal
+    if (deltimeLocal !== 0) {
+      if (
+        deltimeLocal >= mtimeLocal &&
+        deltimeLocal >= mtimeRemote &&
+        deltimeLocal >= deltimeRemote
+      ) {
+        r.decision = DecisionTypeForFile.UPLOAD_LOCAL_DELETE_HISTORY_TO_REMOTE;
+        r.decisionBranch = 6;
+        if (r.existLocal || r.existRemote) {
+          // actual deletion would happen
+        }
+        return r;
+      }
+    }
+
+    // 4. deltimeRemote
+    if (r.deltimeRemote !== undefined && r.deltimeRemote !== 0) {
+      if (
+        r.deltimeRemote >= mtimeLocal &&
+        r.deltimeRemote >= mtimeRemote &&
+        r.deltimeRemote >= deltimeLocal
+      ) {
+        r.decision = DecisionTypeForFile.KEEP_REMOTE_DELETE_HISTORY;
+        r.decisionBranch = 7;
+        if (r.existLocal || r.existRemote) {
+          // actual deletion would happen
+        }
+        return r;
+      }
+    }
+
+    throw Error(`no decision for ${JSON.stringify(r)}`);
+  }
 }
