@@ -1,26 +1,38 @@
-import { TFile, TFolder, Vault, normalizePath } from "obsidian";
+import {
+  TFile,
+  TFolder,
+  Vault,
+  normalizePath,
+  requireApiVersion,
+} from "obsidian";
 import { GoogleDriveFiles } from "../google/GoogleDriveFiles";
 import GoogleSavePlugin from "../main";
 import { METADATA_FILE } from "../types";
 import { FileHandler } from "./FileHandler";
 import {
   AssembleMixedStatesArgs,
+  DecisionTypeForFolder,
   FileOrFolderMixedState,
+  GetSyncPlanArgs,
   GoogleDriveApplicationMimeType,
   RemoteFile,
 } from "../types/file";
-import { MetadataOnRemote } from "../types/metadata";
+import { DeletionOnRemote, MetadataOnRemote } from "../types/metadata";
 import { FileFolderHistoryActionType } from "../types/database";
+import { GoogleSaveDb } from "../database";
+import { Utils } from "../shared/utils";
 
 export class FileSync {
   private fileHandler: FileHandler;
   private vault: Vault;
   private googleDriveFiles: GoogleDriveFiles;
+  private db: GoogleSaveDb;
 
   constructor(private readonly plugin: GoogleSavePlugin) {
     this.googleDriveFiles = this.plugin.googleDriveFiles;
     this.vault = this.plugin.app.vault;
     this.fileHandler = new FileHandler(this.plugin);
+    this.db = this.plugin.db;
   }
 
   public async sync() {
@@ -35,6 +47,7 @@ export class FileSync {
 
     const localFiles = await this.getLocal();
 
+    const localFileHistory = await this.db.fileHistory.getAll();
     console.log(remoteStates);
     console.log(localFiles);
   }
@@ -98,12 +111,6 @@ export class FileSync {
   private async getLocal() {
     const files = this.vault.getAllLoadedFiles();
 
-    // return Promise.all(
-    //   files.map(async (localFile) => ({
-    //     ...localFile,
-    //     ...(await this.vault.adapter.stat(localFile.path)),
-    //   }))
-    // );
     return files;
   }
 
@@ -129,7 +136,36 @@ export class FileSync {
     return metadataFile;
   }
 
-  private async getSycnPlan() {}
+  private async getSycnPlan({
+    remoteFileStates,
+    localFiles,
+    remoteDeleteFiles,
+    localFileHistory,
+  }: GetSyncPlanArgs) {
+    const mixedStates = await this.assembleMixedStates({
+      remoteFileStates,
+      localFiles,
+      remoteDeleteFiles,
+      localFileHistory,
+    });
+
+    const sortedKeys = Object.keys(mixedStates).sort(
+      (k1, k2) => k2.length - k1.length
+    );
+
+    const sizesGoWrong: FileOrFolderMixedState[] = [];
+    const deletions: DeletionOnRemote[] = [];
+
+    const keptFolder = new Set<string>();
+
+    for (const key of sortedKeys) {
+      const val = mixedStates[key];
+
+      if (key.endsWith("/")) {
+      } else {
+      }
+    }
+  }
 
   private async assembleMixedStates({
     remoteFileStates,
@@ -305,4 +341,116 @@ export class FileSync {
 
     return false;
   }
+
+  private async assignOperationToFolder(
+    originRecord: FileOrFolderMixedState,
+    keptFolder: Set<string>
+  ) {
+    const r = {
+      ...originRecord,
+    };
+
+    if (!r.key.endsWith("/")) {
+      return r;
+    }
+
+    if (!keptFolder.has(r.key)) {
+      if (!r.deltimeLocal || !r.deltimeRemote) {
+        const deltimeLocal = r.deltimeLocal !== undefined ? r.deltimeLocal : 0;
+        const deltimeRemote =
+          r.deltimeRemote !== undefined ? r.deltimeRemote : 0;
+
+        if (requireApiVersion("0.13.27")) {
+          if (r.existLocal) {
+            const fileStat = await this.vault.adapter.stat(r.key);
+            const cmtime = Math.max(fileStat?.ctime ?? 0, fileStat?.mtime ?? 0);
+
+            if (
+              !Number.isNaN(cmtime) &&
+              cmtime > 0 &&
+              cmtime >= deltimeLocal &&
+              cmtime >= deltimeRemote
+            ) {
+              keptFolder.add(Utils.getParentFolder(r.key));
+
+              if (r.existLocal && r.existRemote) {
+                r.decision = DecisionTypeForFolder.SKIP_FOLDER;
+                r.decisionBranch = 14;
+              } else if (r.existLocal || r.existRemote) {
+                r.decision = DecisionTypeForFolder.CREATE_FOLDER;
+                r.decisionBranch = 15;
+              } else {
+                throw Error(
+                  `Error: Folder ${r.key} doesn't exist locally and remotely but is marked must be kept. Abort.`
+                );
+              }
+            }
+          }
+        }
+
+        if (
+          r.existLocal &&
+          r.changeLocalMtimeUsingMapping &&
+          (r.mtimeLocal || 0) > 0 &&
+          (r.mtimeLocal || 0) > deltimeLocal &&
+          (r.mtimeLocal || 0) > deltimeRemote
+        ) {
+          keptFolder.add(Utils.getParentFolder(r.key));
+          if (r.existLocal && r.existRemote) {
+            r.decision = DecisionTypeForFolder.SKIP_FOLDER;
+            r.decisionBranch = 16;
+          } else if (r.existLocal || r.existRemote) {
+            r.decision = DecisionTypeForFolder.CREATE_FOLDER;
+            r.decisionBranch = 17;
+          } else {
+            throw Error(
+              `Error: Folder ${r.key} doesn't exist locally and remotely but is marked must be kept. Abort.`
+            );
+          }
+        }
+
+        if (r.decision === undefined) {
+          // not yet decided by the above reason
+          if (deltimeLocal > 0 && deltimeLocal > deltimeRemote) {
+            r.decision =
+              DecisionTypeForFolder.UPLOAD_LOCAL_DELETE_HISTORY_TO_REMOTE_FOLDER;
+            r.decisionBranch = 8;
+          } else {
+            r.decision =
+              DecisionTypeForFolder.KEEP_REMOTE_DELETE_HISTORY_FOLDER;
+            r.decisionBranch = 9;
+          }
+        }
+      } else {
+        keptFolder.add(Utils.getParentFolder(r.key));
+        if (r.existLocal && r.existRemote) {
+          r.decision =
+            DecisionTypeForFolder.UPLOAD_LOCAL_DELETE_HISTORY_TO_REMOTE_FOLDER;
+          r.decisionBranch = 10;
+        } else if (r.existLocal || r.existRemote) {
+          r.decision = DecisionTypeForFolder.KEEP_REMOTE_DELETE_HISTORY_FOLDER;
+          r.decisionBranch = 11;
+        } else {
+          throw Error(
+            `Error: Folder ${r.key} doesn't exist locally and remotely but is marked must be kept. Abort.`
+          );
+        }
+      }
+    } else {
+      keptFolder.add(Utils.getParentFolder(r.key));
+      if (r.existLocal && r.existRemote) {
+        r.decision = DecisionTypeForFolder.SKIP_FOLDER;
+        r.decisionBranch = 12;
+      } else if (r.existLocal || r.existRemote) {
+        r.decision = DecisionTypeForFolder.CREATE_FOLDER;
+        r.decisionBranch = 13;
+      } else {
+        throw Error(
+          `Error: Folder ${r.key} doesn't exist locally and remotely but is marked must be kept. Abort.`
+        );
+      }
+    }
+  }
+
+  private async assignOperationToFile() {}
 }

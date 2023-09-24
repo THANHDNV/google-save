@@ -5,6 +5,7 @@ import { GoogleSaveSettingTab } from "./settingTab";
 import { GoogleDriveFiles } from "./google/GoogleDriveFiles";
 import { FileSync } from "./googleSave/FileSync";
 import { GoogleAuth } from "./google/GoogleAuth";
+import { GoogleSaveDb } from "./database";
 
 // Remember to rename these classes and interfaces!
 
@@ -14,10 +15,12 @@ export default class GoogleSavePlugin extends Plugin {
   googleDriveFiles: GoogleDriveFiles;
   fileSync: FileSync;
   googleAuth: GoogleAuth;
+  db: GoogleSaveDb;
 
   async onload() {
     await this.loadSettings();
     this.googleAuth = new GoogleAuth(this);
+    this.db = new GoogleSaveDb();
 
     // This creates an icon in the left ribbon.
     // const ribbonIconEl = this.addRibbonIcon("dice", "Greet", () => {

@@ -26,16 +26,31 @@ export class GoogleSaveDbTable<T = any> {
   getAll(): Promise<
     {
       key: string;
-      value: T | null;
+      value: T;
     }[]
   > {
     return this.table.keys().then((keys) =>
-      Promise.all(
-        keys.map(async (key) => ({
-          key,
-          value: await this.table.getItem<T>(key),
-        }))
-      )
+      keys.reduce<
+        Promise<
+          {
+            key: string;
+            value: T;
+          }[]
+        >
+      >(async (listPromise, key) => {
+        const list = await listPromise;
+
+        const value = await this.get(key);
+
+        if (value) {
+          list.push({
+            key,
+            value,
+          });
+        }
+
+        return list;
+      }, Promise.resolve([]))
     );
   }
 

@@ -86,6 +86,13 @@ export interface FileOrFolderMixedState {
   changeLocalMtimeUsingMapping?: boolean;
 }
 
+export type GetSyncPlanArgs = {
+  localFiles: Array<TAbstractFile>;
+  remoteFileStates: FileOrFolderMixedState[];
+  remoteDeleteFiles: DeletionOnRemote[];
+  localFileHistory: FileFolderHistoryRecord[];
+};
+
 export type AssembleMixedStatesArgs = {
   localFiles: Array<TAbstractFile>;
   remoteFileStates: FileOrFolderMixedState[];
