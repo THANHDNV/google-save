@@ -13,12 +13,14 @@ import {
   AssembleMixedStatesArgs,
   DecisionTypeForFile,
   DecisionTypeForFolder,
+  DispatchOperationToActualArgs,
   DoActualSyncArgs,
   FileOrFolderMixedState,
   GetSyncPlanArgs,
   GoogleDriveApplicationMimeType,
   RemoteFile,
   SyncTriggerSourceType,
+  UploadExtraMetaArgs,
 } from "../types/file";
 import { DeletionOnRemote, MetadataOnRemote } from "../types/metadata";
 import { FileFolderHistoryActionType } from "../types/database";
@@ -63,7 +65,7 @@ export class FileSync {
     console.log(syncPlan);
   }
 
-  private async getRemote() {
+  private async getRootRemoteId() {
     const rootDir =
       this.plugin.settings.rootDir || this.plugin.app.vault.getName();
 
@@ -73,6 +75,12 @@ export class FileSync {
       rootFolderId = (await this.googleDriveFiles.createFolder(rootDir))
         .id as string;
     }
+
+    return rootFolderId;
+  }
+
+  private async getRemote() {
+    const rootFolderId = await this.getRootRemoteId();
 
     const files = await this.googleDriveFiles.getAllFiles(rootFolderId, "/");
 
@@ -677,7 +685,7 @@ export class FileSync {
     const mixedStates = syncPlan.mixedStates;
     const totalCount = sortedKeys.length || 0;
 
-    await uploadExtraMeta({
+    await this.uploadExtraMeta({
       metadataFile,
       origMetadata,
       deletions,
@@ -686,7 +694,62 @@ export class FileSync {
     for (const key of sortedKeys) {
       const val = mixedStates[key];
 
-      await dispatchOperationToActual({ key, val });
+      await this.dispatchOperationToActual({ key, mixedState: val });
+    }
+  }
+
+  private async uploadExtraMeta({
+    deletions,
+    metadataFile,
+    origMetadata,
+  }: UploadExtraMetaArgs) {
+    const newMetadata: MetadataOnRemote = {
+      deletions,
+    };
+
+    if (Utils.isEqualMetadataOnRemote(origMetadata, newMetadata)) {
+      return;
+    }
+
+    if (!metadataFile?.remoteKey) {
+      const rootId = await this.getRootRemoteId();
+
+      await this.googleDriveFiles.create(
+        METADATA_FILE,
+        rootId,
+        Buffer.from(JSON.stringify(newMetadata))
+      );
+
+      return;
+    }
+  }
+
+  private async dispatchOperationToActual({
+    key,
+    mixedState,
+  }: DispatchOperationToActualArgs) {
+    switch (mixedState.decision) {
+      case DecisionTypeForFile.SKIP_UPLOADING:
+        break;
+      case DecisionTypeForFile.UPLOAD_LOCAL_TO_REMOTE:
+        break;
+      case DecisionTypeForFile.DOWNLOAD_REMOTE_TO_LOCAL:
+        break;
+      case DecisionTypeForFile.UPLOAD_LOCAL_DELETE_HISTORY_TO_REMOTE:
+        break;
+      case DecisionTypeForFile.KEEP_REMOTE_DELETE_HISTORY:
+        break;
+
+      case DecisionTypeForFolder.SKIP_FOLDER:
+        break;
+      case DecisionTypeForFolder.CREATE_FOLDER:
+        break;
+      case DecisionTypeForFolder.KEEP_REMOTE_DELETE_HISTORY_FOLDER:
+        break;
+      case DecisionTypeForFolder.UPLOAD_LOCAL_DELETE_HISTORY_TO_REMOTE_FOLDER:
+        break;
+      default:
+        throw Error(`no decision for ${JSON.stringify(mixedState)}`);
     }
   }
 }

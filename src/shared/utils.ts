@@ -1,5 +1,7 @@
 import { Notice } from "obsidian";
 import path from "path";
+import { MetadataOnRemote } from "../types/metadata";
+import isEqual from "lodash.isequal";
 
 export class Utils {
   private static noticeMap: Map<string, moment.Moment> = new Map();
@@ -31,5 +33,18 @@ export class Utils {
       return b;
     }
     return `${b}/`;
+  };
+
+  public static isEqualMetadataOnRemote = (
+    a: MetadataOnRemote,
+    b: MetadataOnRemote
+  ) => {
+    const m1 = a === undefined ? { deletions: [] } : a;
+    const m2 = b === undefined ? { deletions: [] } : b;
+
+    // we only need to compare deletions
+    const d1 = m1.deletions === undefined ? [] : m1.deletions;
+    const d2 = m2.deletions === undefined ? [] : m2.deletions;
+    return isEqual(d1, d2);
   };
 }

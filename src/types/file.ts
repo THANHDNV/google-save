@@ -122,3 +122,14 @@ export type DoActualSyncArgs = {
   deletions: DeletionOnRemote[];
   concurrency: number;
 };
+
+export type UploadExtraMetaArgs = {
+  metadataFile?: FileOrFolderMixedState;
+  origMetadata: MetadataOnRemote;
+  deletions: DeletionOnRemote[];
+};
+
+export type DispatchOperationToActualArgs = {
+  mixedState: FileOrFolderMixedState;
+  key: string;
+};
