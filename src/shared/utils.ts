@@ -1,4 +1,4 @@
-import { Notice } from "obsidian";
+import { Notice, Stat, Vault } from "obsidian";
 import path from "path";
 import { MetadataOnRemote } from "../types/metadata";
 import isEqual from "lodash.isequal";
@@ -79,4 +79,21 @@ export class Utils {
     }
     return res;
   };
+
+  public static async statFix(vault: Vault, path: string) {
+    const s: any = (await vault.adapter.stat(path)) as Stat;
+    if (s.ctime === undefined || s.ctime === null || Number.isNaN(s.ctime)) {
+      s.ctime = undefined;
+    }
+    if (s.mtime === undefined || s.mtime === null || Number.isNaN(s.mtime)) {
+      s.mtime = undefined;
+    }
+    if (
+      (s.size === undefined || s.size === null || Number.isNaN(s.size)) &&
+      s.type === "folder"
+    ) {
+      s.size = 0;
+    }
+    return s;
+  }
 }

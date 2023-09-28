@@ -7,7 +7,7 @@ import {
 } from "obsidian";
 import { GoogleDriveFiles } from "../google/GoogleDriveFiles";
 import GoogleSavePlugin from "../main";
-import { METADATA_FILE } from "../types";
+import { FILE_STAT_SUPPORT_VERSION, METADATA_FILE } from "../types";
 import { FileHandler } from "./FileHandler";
 import {
   AssembleMixedStatesArgs,
@@ -62,6 +62,8 @@ export class FileSync {
       syncTriggerSource,
     });
 
+    Utils.createNotice("Got the plan!");
+
     await this.doActualSync({
       syncPlan: plan,
       deletions,
@@ -69,6 +71,8 @@ export class FileSync {
       origMetadata: metadataOnRemote,
       sortedKeys,
     });
+
+    Utils.createNotice("Sync completed!!!!!!!!");
   }
 
   private async getRemote() {
@@ -258,6 +262,7 @@ export class FileSync {
 
     for (const remoteFileState of remoteFileStates) {
       const key = remoteFileState.key;
+
       if (this.isSkippableFile(key)) {
         continue;
       }
@@ -267,7 +272,8 @@ export class FileSync {
     }
 
     for (const localFile of localFiles) {
-      const key = localFile.path;
+      const key =
+        localFile instanceof TFile ? localFile.path : `${localFile.path}/`;
 
       if (this.isSkippableFile(key)) {
         continue;
@@ -295,7 +301,7 @@ export class FileSync {
 
       if (localFile instanceof TFolder) {
         r = {
-          key: `${key}/`,
+          key,
           existLocal: true,
           sizeLocal: 0,
         };
@@ -442,9 +448,9 @@ export class FileSync {
           r.deltimeRemote !== undefined ? r.deltimeRemote : 0;
 
         // stat API made available
-        if (requireApiVersion("0.13.27")) {
+        if (requireApiVersion(FILE_STAT_SUPPORT_VERSION)) {
           if (r.existLocal) {
-            const fileStat = await this.vault.adapter.stat(r.key);
+            const fileStat = await Utils.statFix(this.vault, r.key);
             const cmtime = Math.max(fileStat?.ctime ?? 0, fileStat?.mtime ?? 0);
 
             if (
@@ -701,8 +707,12 @@ export class FileSync {
       deletions,
     });
 
+    Utils.createNotice("Updated metadata on remote");
+
     for (const key of sortedKeys) {
       const val = mixedStates[key];
+
+      console.log(key, val);
 
       await this.dispatchOperationToActual({ key, mixedState: val });
     }

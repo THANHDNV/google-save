@@ -28,7 +28,6 @@ export interface FileFolderHistoryRecord {
   actionType: FileFolderHistoryActionType;
   keyType: FileFolderHistoryKeyType;
   renameTo: string;
-  vaultRandomID: string;
 }
 
 export interface SyncMetaMappingRecord {

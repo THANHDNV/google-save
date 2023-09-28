@@ -9,3 +9,4 @@ export type GoogleSavePluginSettings = {
 };
 
 export const METADATA_FILE = ".google-save.json";
+export const FILE_STAT_SUPPORT_VERSION = "0.13.27";

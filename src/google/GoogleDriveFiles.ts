@@ -3,6 +3,7 @@ import { GoogleAuth } from "./GoogleAuth";
 import GoogleSavePlugin from "../main";
 import { v4 as uuid } from "uuid";
 import { GoogleDriveApplicationMimeType, RemoteFile } from "../types/file";
+import { backOff } from "exponential-backoff";
 
 const GOOGLE_API = "https://www.googleapis.com/";
 
@@ -238,13 +239,21 @@ export class GoogleDriveFiles {
       }
     }
 
-    return requestUrl({
-      url: url.toString(),
-      headers: {
-        Authorization: `Bearer ${await this.authClient.getAccessToken()}`,
-        ...headers,
-      },
-      ...params,
-    });
+    const accessToken = await this.authClient.getAccessToken();
+
+    return backOff(
+      async () =>
+        requestUrl({
+          url: url.toString(),
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            ...headers,
+          },
+          ...params,
+        }),
+      {
+        numOfAttempts: 5,
+      }
+    );
   }
 }

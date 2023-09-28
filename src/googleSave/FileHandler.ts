@@ -1,4 +1,11 @@
-import { TAbstractFile, TFile, TFolder, debounce } from "obsidian";
+import {
+  TAbstractFile,
+  TFile,
+  TFolder,
+  Vault,
+  debounce,
+  requireApiVersion,
+} from "obsidian";
 import { GoogleDriveFiles } from "../google/GoogleDriveFiles";
 import GoogleSavePlugin from "../main";
 import { Utils } from "../shared/utils";
@@ -7,13 +14,21 @@ import {
   GoogleDriveApplicationMimeType,
 } from "../types/file";
 import { GoogleSaveDb } from "../database";
-import { SyncMetaMappingRecord } from "../types/database";
+import {
+  FileFolderHistoryActionType,
+  FileFolderHistoryKeyType,
+  FileFolderHistoryRecord,
+  SyncMetaMappingRecord,
+} from "../types/database";
+import { FILE_STAT_SUPPORT_VERSION } from "../types";
 
 export class FileHandler {
-  private googleDriveFiles: GoogleDriveFiles;
-  private db: GoogleSaveDb;
+  private readonly vault: Vault;
+  private readonly googleDriveFiles: GoogleDriveFiles;
+  private readonly db: GoogleSaveDb;
 
   constructor(private readonly plugin: GoogleSavePlugin) {
+    this.vault = this.plugin.app.vault;
     this.googleDriveFiles = this.plugin.googleDriveFiles;
     this.db = this.plugin.db;
 
@@ -36,17 +51,14 @@ export class FileHandler {
   }
 
   private async checkRootFolder() {
-    const rootDir =
-      this.plugin.settings.rootDir || this.plugin.app.vault.getName();
+    const rootDir = this.plugin.settings.rootDir || this.vault.getName();
 
     const foundFolder = await this.googleDriveFiles.list({
       q: `mimeType='${GoogleDriveApplicationMimeType}' and trashed=false and name='${rootDir}' and 'root' in parents`,
     });
 
     if (foundFolder.files.length >= 1) {
-      if (!this.plugin.settings.fileMap[foundFolder.files[0].id]) {
-        await this.addFileMapping(foundFolder.files[0].id, "/");
-      }
+      await this.addFileMapping(foundFolder.files[0].id, "/");
 
       return;
     }
@@ -61,20 +73,120 @@ export class FileHandler {
   }
 
   private registerVaultEvents() {
-    this.plugin.registerEvent(
-      this.plugin.app.vault.on("create", this.handleCreateEvent.bind(this))
-    );
+    // this.plugin.registerEvent(
+    //   this.vault.on("create", this.handleCreateEvent.bind(this))
+    // );
 
-    const onModify = debounce(this.handleModifyEvent.bind(this), 1500, true);
-    this.plugin.registerEvent(this.plugin.app.vault.on("modify", onModify));
-
-    this.plugin.registerEvent(
-      this.plugin.app.vault.on("delete", this.handleDeleteEvent.bind(this))
-    );
+    // const onModify = debounce(this.handleModifyEvent.bind(this), 1500, true);
+    // this.plugin.registerEvent(this.vault.on("modify", onModify));
 
     this.plugin.registerEvent(
-      this.plugin.app.vault.on("rename", this.handleRenameEvent.bind(this))
+      this.vault.on("delete", this.insertDeleteRecord.bind(this))
     );
+
+    this.plugin.registerEvent(
+      this.vault.on("rename", this.insertRenameRecord.bind(this))
+    );
+  }
+
+  private async insertDeleteRecord(fileOrFolder: TFile | TFolder) {
+    let k: FileFolderHistoryRecord;
+
+    if (fileOrFolder instanceof TFile) {
+      k = {
+        key: fileOrFolder.path,
+        ctime: fileOrFolder.stat.ctime,
+        mtime: fileOrFolder.stat.mtime,
+        size: fileOrFolder.stat.size,
+        actionWhen: Date.now(),
+        actionType: FileFolderHistoryActionType.DELETE,
+        keyType: FileFolderHistoryKeyType.FILE,
+        renameTo: "",
+      };
+    } else {
+      const key = fileOrFolder.path.endsWith("/")
+        ? fileOrFolder.path
+        : `${fileOrFolder.path}/`;
+      const ctime = 0; // they are deleted, so no way to get ctime, mtime
+      const mtime = 0; // they are deleted, so no way to get ctime, mtime
+      k = {
+        key: key,
+        ctime: ctime,
+        mtime: mtime,
+        size: 0,
+        actionWhen: Date.now(),
+        actionType: FileFolderHistoryActionType.DELETE,
+        keyType: FileFolderHistoryKeyType.FOLDER,
+        renameTo: "",
+      };
+    }
+
+    await this.db.fileHistory.set(k.key, k);
+  }
+
+  private async insertRenameRecord(
+    fileOrFolder: TFile | TFolder,
+    oldPath: string
+  ) {
+    let k1: FileFolderHistoryRecord;
+    let k2: FileFolderHistoryRecord;
+    const actionWhen = Date.now();
+    if (fileOrFolder instanceof TFile) {
+      k1 = {
+        key: oldPath,
+        ctime: fileOrFolder.stat.ctime,
+        mtime: fileOrFolder.stat.mtime,
+        size: fileOrFolder.stat.size,
+        actionWhen: actionWhen,
+        actionType: FileFolderHistoryActionType.RENAME,
+        keyType: FileFolderHistoryKeyType.FILE,
+        renameTo: fileOrFolder.path,
+      };
+      k2 = {
+        key: fileOrFolder.path,
+        ctime: fileOrFolder.stat.ctime,
+        mtime: fileOrFolder.stat.mtime,
+        size: fileOrFolder.stat.size,
+        actionWhen: actionWhen,
+        actionType: FileFolderHistoryActionType.RENAME_DESTINATION,
+        keyType: FileFolderHistoryKeyType.FILE,
+        renameTo: "", // itself is the destination, so no need to set this field
+      };
+    } else if (fileOrFolder instanceof TFolder) {
+      const key = oldPath.endsWith("/") ? oldPath : `${oldPath}/`;
+      const renameTo = fileOrFolder.path.endsWith("/")
+        ? fileOrFolder.path
+        : `${fileOrFolder.path}/`;
+      let ctime = 0;
+      let mtime = 0;
+      if (requireApiVersion(FILE_STAT_SUPPORT_VERSION)) {
+        // TAbstractFile does not contain these info
+        // but from API_VER_STAT_FOLDER we can manually stat them by path.
+        const s = await Utils.statFix(this.vault, fileOrFolder.path);
+        ctime = s.ctime;
+        mtime = s.mtime;
+      }
+      k1 = {
+        key: key,
+        ctime: ctime,
+        mtime: mtime,
+        size: 0,
+        actionWhen: actionWhen,
+        actionType: FileFolderHistoryActionType.RENAME,
+        keyType: FileFolderHistoryKeyType.FOLDER,
+        renameTo: renameTo,
+      };
+      k2 = {
+        key: renameTo,
+        ctime: ctime,
+        mtime: mtime,
+        size: 0,
+        actionWhen: actionWhen,
+        actionType: FileFolderHistoryActionType.RENAME_DESTINATION,
+        keyType: FileFolderHistoryKeyType.FOLDER,
+        renameTo: "", // itself is the destination, so no need to set this field
+      };
+    }
   }
 
   private async handleCreateEvent(file: TFile | TFolder) {
@@ -93,7 +205,7 @@ export class FileHandler {
       return;
     }
 
-    const fileData = await this.plugin.app.vault.adapter.readBinary(file.path);
+    const fileData = await this.vault.adapter.readBinary(file.path);
 
     const { id } = await this.googleDriveFiles.create(
       file.name,
@@ -148,7 +260,7 @@ export class FileHandler {
   private async handleModifyEvent(file: TAbstractFile) {
     const fileId = this.getFileIdFromPath(file.path);
 
-    const fileData = await this.plugin.app.vault.adapter.readBinary(file.path);
+    const fileData = await this.vault.adapter.readBinary(file.path);
 
     const result = await this.googleDriveFiles.updateFile(fileId, fileData);
 
@@ -202,8 +314,8 @@ export class FileHandler {
   }
 
   public async trash(x: string) {
-    if (!(await this.plugin.app.vault.adapter.trashSystem(x))) {
-      await this.plugin.app.vault.adapter.trashLocal(x);
+    if (!(await this.vault.adapter.trashSystem(x))) {
+      await this.vault.adapter.trashLocal(x);
     }
   }
 
@@ -268,7 +380,7 @@ export class FileHandler {
       parentFolder
     )) as string;
 
-    const buffer = await this.plugin.app.vault.adapter.readBinary(key);
+    const buffer = await this.vault.adapter.readBinary(key);
     const { id } = await this.googleDriveFiles.create(
       name,
       parentFolderRemoteId,
@@ -341,7 +453,7 @@ export class FileHandler {
       true
     );
 
-    await this.plugin.app.vault.adapter.writeBinary(localKey, contentBuffer);
+    await this.vault.adapter.writeBinary(localKey, contentBuffer);
   }
 
   public async createFolderLocal(localKey: string) {
@@ -352,10 +464,10 @@ export class FileHandler {
     const foldersToBuild = Utils.getFolderLevels(localKey);
 
     for (const folder of foldersToBuild) {
-      const r = await this.plugin.app.vault.adapter.exists(folder);
+      const r = await this.vault.adapter.exists(folder);
 
       if (!r) {
-        await this.plugin.app.vault.adapter.mkdir(folder);
+        await this.vault.adapter.mkdir(folder);
       }
     }
   }
