@@ -54,7 +54,7 @@ export class FileSync {
 
     const localFileHistory = await this.db.fileHistory.getAll();
 
-    const syncPlan = await this.getSyncPlan({
+    const { plan, sortedKeys, deletions } = await this.getSyncPlan({
       localFileHistory: Object.values(localFileHistory),
       localFiles,
       remoteDeleteFiles: metadataOnRemote.deletions || [],
@@ -62,25 +62,17 @@ export class FileSync {
       syncTriggerSource,
     });
 
-    console.log(syncPlan);
-  }
-
-  private async getRootRemoteId() {
-    const rootDir =
-      this.plugin.settings.rootDir || this.plugin.app.vault.getName();
-
-    let rootFolderId = await this.googleDriveFiles.getRootFolder(rootDir);
-
-    if (!rootFolderId) {
-      rootFolderId = (await this.googleDriveFiles.createFolder(rootDir))
-        .id as string;
-    }
-
-    return rootFolderId;
+    await this.doActualSync({
+      syncPlan: plan,
+      deletions,
+      metadataFile,
+      origMetadata: metadataOnRemote,
+      sortedKeys,
+    });
   }
 
   private async getRemote() {
-    const rootFolderId = await this.getRootRemoteId();
+    const rootFolderId = await this.fileHandler.getRootRemoteId();
 
     const files = await this.googleDriveFiles.getAllFiles(rootFolderId, "/");
 
@@ -105,14 +97,33 @@ export class FileSync {
       if (isFolder) {
         fileFullPath = `${fileFullPath}/`;
       }
+      const mTimeRemote = new Date(remoteFile.modifiedTime).getTime();
 
-      const file: FileOrFolderMixedState = {
-        key: fileFullPath,
-        remoteKey: remoteFile.id,
-        existRemote: true,
-        mtimeRemote: new Date(remoteFile.modifiedTime).getTime(),
-        sizeRemote: isFolder ? 0 : parseInt(remoteFile.size),
-      };
+      const backwardMapping =
+        await this.fileHandler.getSyncMetaMappingByRemoteKey({
+          remoteKey: remoteFile.id,
+          mTimeRemote,
+        });
+
+      let file: FileOrFolderMixedState;
+
+      if (backwardMapping) {
+        file = {
+          key: backwardMapping.localKey,
+          remoteKey: remoteFile.id,
+          existRemote: true,
+          sizeRemote: backwardMapping.localSize,
+          mtimeRemote: backwardMapping.localMtime ?? mTimeRemote,
+        };
+      } else {
+        file = {
+          key: fileFullPath,
+          remoteKey: remoteFile.id,
+          existRemote: true,
+          mtimeRemote: mTimeRemote,
+          sizeRemote: isFolder ? 0 : parseInt(remoteFile.size),
+        };
+      }
 
       remoteStates.push(file);
 
@@ -232,7 +243,7 @@ export class FileSync {
     };
     return {
       plan: plan,
-      sortedKeys: sortedKeys,
+      sortedKeys: sortedKeys.sort((a, b) => a.length - b.length),
       deletions: deletions,
     };
   }
@@ -302,7 +313,7 @@ export class FileSync {
       } else {
         result[key] = {
           ...r,
-          existRemote: true,
+          existRemote: false,
         };
       }
     }
@@ -430,6 +441,7 @@ export class FileSync {
         const deltimeRemote =
           r.deltimeRemote !== undefined ? r.deltimeRemote : 0;
 
+        // stat API made available
         if (requireApiVersion("0.13.27")) {
           if (r.existLocal) {
             const fileStat = await this.vault.adapter.stat(r.key);
@@ -565,7 +577,6 @@ export class FileSync {
       );
     }
 
-    const sizeLocalComp = r.sizeLocal;
     const sizeRemoteComp = r.sizeRemote;
 
     const mtimeRemote = r.existRemote ? r.mtimeRemote ?? 0 : 0;
@@ -673,17 +684,16 @@ export class FileSync {
     throw Error(`no decision for ${JSON.stringify(r)}`);
   }
 
+  // TODO: actual support concurrency
   private async doActualSync({
     syncPlan,
     sortedKeys,
     metadataFile,
     origMetadata,
-    sizesGoWrong,
     deletions,
     concurrency = 1,
   }: DoActualSyncArgs) {
     const mixedStates = syncPlan.mixedStates;
-    const totalCount = sortedKeys.length || 0;
 
     await this.uploadExtraMeta({
       metadataFile,
@@ -712,7 +722,7 @@ export class FileSync {
     }
 
     if (!metadataFile?.remoteKey) {
-      const rootId = await this.getRootRemoteId();
+      const rootId = await this.fileHandler.getRootRemoteId();
 
       await this.googleDriveFiles.create(
         METADATA_FILE,
@@ -730,23 +740,52 @@ export class FileSync {
   }: DispatchOperationToActualArgs) {
     switch (mixedState.decision) {
       case DecisionTypeForFile.SKIP_UPLOADING:
-        break;
-      case DecisionTypeForFile.UPLOAD_LOCAL_TO_REMOTE:
-        break;
-      case DecisionTypeForFile.DOWNLOAD_REMOTE_TO_LOCAL:
+      case DecisionTypeForFolder.SKIP_FOLDER:
+        // do nothing
         break;
       case DecisionTypeForFile.UPLOAD_LOCAL_DELETE_HISTORY_TO_REMOTE:
-        break;
       case DecisionTypeForFile.KEEP_REMOTE_DELETE_HISTORY:
+      case DecisionTypeForFolder.UPLOAD_LOCAL_DELETE_HISTORY_TO_REMOTE_FOLDER:
+      case DecisionTypeForFolder.KEEP_REMOTE_DELETE_HISTORY_FOLDER:
+        if (mixedState.existLocal) {
+          // remove local
+          await this.fileHandler.trash(key);
+        }
+
+        if (mixedState.existRemote && mixedState.remoteKey) {
+          // remove remote
+          await this.googleDriveFiles.deleteFile(mixedState.remoteKey);
+        }
+
+        // remove from history table in local
+        await this.fileHandler.clearDeleteRenameHistoryOfKeyAndVault(
+          mixedState.key
+        );
         break;
 
-      case DecisionTypeForFolder.SKIP_FOLDER:
+      case DecisionTypeForFile.UPLOAD_LOCAL_TO_REMOTE:
+        await this.fileHandler.uploadFile(mixedState);
+        break;
+      case DecisionTypeForFile.DOWNLOAD_REMOTE_TO_LOCAL:
+        if (!mixedState.remoteKey) {
+          throw new Error(
+            `remote file without remote key? ${JSON.stringify(mixedState)}`
+          );
+        }
+
+        await this.fileHandler.downloadRemoteToLocal(
+          mixedState.key,
+          mixedState.remoteKey as string
+        );
         break;
       case DecisionTypeForFolder.CREATE_FOLDER:
-        break;
-      case DecisionTypeForFolder.KEEP_REMOTE_DELETE_HISTORY_FOLDER:
-        break;
-      case DecisionTypeForFolder.UPLOAD_LOCAL_DELETE_HISTORY_TO_REMOTE_FOLDER:
+        if (!mixedState.existLocal) {
+          await this.fileHandler.createFolderLocal(mixedState.key);
+        }
+
+        if (!mixedState.existRemote) {
+          await this.fileHandler.uploadFolder(mixedState);
+        }
         break;
       default:
         throw Error(`no decision for ${JSON.stringify(mixedState)}`);

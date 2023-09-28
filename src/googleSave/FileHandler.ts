@@ -2,18 +2,37 @@ import { TAbstractFile, TFile, TFolder, debounce } from "obsidian";
 import { GoogleDriveFiles } from "../google/GoogleDriveFiles";
 import GoogleSavePlugin from "../main";
 import { Utils } from "../shared/utils";
-import { GoogleDriveApplicationMimeType } from "../types/file";
+import {
+  FileOrFolderMixedState,
+  GoogleDriveApplicationMimeType,
+} from "../types/file";
+import { GoogleSaveDb } from "../database";
+import { SyncMetaMappingRecord } from "../types/database";
 
 export class FileHandler {
   private googleDriveFiles: GoogleDriveFiles;
+  private db: GoogleSaveDb;
 
   constructor(private readonly plugin: GoogleSavePlugin) {
     this.googleDriveFiles = this.plugin.googleDriveFiles;
+    this.db = this.plugin.db;
 
     this.plugin.app.workspace.onLayoutReady(() => {
       this.checkRootFolder();
       this.registerVaultEvents();
     });
+  }
+
+  public async getRootRemoteId() {
+    let remoteId = await this.db.localToRemoteKeyMapping.get("/");
+    if (remoteId) {
+      return remoteId;
+    }
+
+    await this.checkRootFolder();
+    remoteId = (await this.db.localToRemoteKeyMapping.get("/")) as string;
+
+    return remoteId;
   }
 
   private async checkRootFolder() {
@@ -26,7 +45,7 @@ export class FileHandler {
 
     if (foundFolder.files.length >= 1) {
       if (!this.plugin.settings.fileMap[foundFolder.files[0].id]) {
-        this.addFileMapping(foundFolder.files[0].id, "/");
+        await this.addFileMapping(foundFolder.files[0].id, "/");
       }
 
       return;
@@ -36,7 +55,7 @@ export class FileHandler {
 
     const { id } = result;
 
-    this.addFileMapping(id, "/");
+    await this.addFileMapping(id, "/");
 
     Utils.createNotice("Create root folder");
   }
@@ -139,9 +158,13 @@ export class FileHandler {
   }
 
   private async addFileMapping(googleDriveId: string, path: string) {
+    await this.db.localToRemoteKeyMapping.set(path, googleDriveId);
+
+    // #region deprecated
     this.plugin.settings.fileMap[googleDriveId] = path;
     this.plugin.settings.fileReverseMap[path] = googleDriveId;
     await this.plugin.saveSettings();
+    // #endregion
   }
 
   private async deleteFileMapping(path: string) {
@@ -176,5 +199,164 @@ export class FileHandler {
     const filePath = _filePath?.startsWith("/") ? _filePath : "/" + _filePath;
 
     return this.plugin.settings.fileReverseMap[filePath || "/"];
+  }
+
+  public async trash(x: string) {
+    if (!(await this.plugin.app.vault.adapter.trashSystem(x))) {
+      await this.plugin.app.vault.adapter.trashLocal(x);
+    }
+  }
+
+  public async clearDeleteRenameHistoryOfKeyAndVault(key: string) {
+    const item = await this.db.fileHistory.get(key);
+
+    if (
+      item !== null &&
+      (item.actionType === "delete" || item.actionType === "rename")
+    ) {
+      await this.db.fileHistory.delete(key);
+    }
+  }
+
+  public async getSyncMetaMappingByRemoteKey({
+    remoteKey,
+    mTimeRemote,
+  }: {
+    remoteKey: string;
+    mTimeRemote: number;
+  }) {
+    const potentialItem = await this.db.syncMapping.get(remoteKey);
+
+    if (
+      potentialItem &&
+      potentialItem.remoteKey === remoteKey &&
+      potentialItem.remoteMtime === mTimeRemote
+    ) {
+      return potentialItem;
+    }
+
+    return null;
+  }
+
+  public async upsertSyncMetaMappingDataByVault(
+    data: Omit<SyncMetaMappingRecord, "keyType">
+  ) {
+    await this.db.syncMapping.set(data.remoteKey, {
+      ...data,
+      keyType: data.localKey.endsWith("/") ? "folder" : "file",
+    });
+  }
+
+  public async uploadFile({
+    key,
+    mtimeLocal,
+    mtimeRemote,
+    sizeLocal,
+    sizeRemote,
+  }: FileOrFolderMixedState) {
+    if (key.endsWith("/")) {
+      return;
+    }
+
+    const pathSplit = key.split("/");
+    const name = pathSplit.pop() as string;
+    const parentFolder = `${pathSplit.join("/")}/`;
+
+    // TODO: we should check if the parent folder exist or not
+    // if not, let's recursively create one
+    const parentFolderRemoteId = (await this.db.localToRemoteKeyMapping.get(
+      parentFolder
+    )) as string;
+
+    const buffer = await this.plugin.app.vault.adapter.readBinary(key);
+    const { id } = await this.googleDriveFiles.create(
+      name,
+      parentFolderRemoteId,
+      buffer
+    );
+
+    await this.upsertSyncMetaMappingDataByVault({
+      localKey: key,
+      remoteKey: id,
+      localMtime: mtimeLocal ?? 0,
+      remoteMtime: mtimeRemote ?? 0,
+      localSize: sizeLocal ?? 0,
+      remoteSize: sizeRemote ?? 0,
+    });
+  }
+
+  public async uploadFolder({
+    key,
+    mtimeLocal,
+    mtimeRemote,
+    sizeLocal,
+    sizeRemote,
+  }: FileOrFolderMixedState) {
+    if (!key.endsWith("/")) {
+      return;
+    }
+
+    const pathSplit = key.split("/");
+    pathSplit.pop(); // last element of folder path split is an empty string
+
+    const name = pathSplit.pop() as string;
+    const parentFolder = `${pathSplit.join("/")}/`;
+
+    // TODO: we should check if the parent folder exist or not
+    // if not, let's recursively create one
+    const parentFolderRemoteId = (await this.db.localToRemoteKeyMapping.get(
+      parentFolder
+    )) as string;
+
+    const { id } = await this.googleDriveFiles.createFolder(
+      name,
+      parentFolderRemoteId
+    );
+
+    await Promise.all([
+      this.db.localToRemoteKeyMapping.set(key, id),
+      await this.upsertSyncMetaMappingDataByVault({
+        localKey: key,
+        remoteKey: id,
+        localMtime: mtimeLocal ?? 0,
+        remoteMtime: mtimeRemote ?? 0,
+        localSize: sizeLocal ?? 0,
+        remoteSize: sizeRemote ?? 0,
+      }),
+    ]);
+  }
+
+  public async downloadRemoteToLocal(localKey: string, remoteKey: string) {
+    if (localKey.endsWith("/")) {
+      return;
+    }
+
+    const pathSplit = localKey.split("/");
+    const name = pathSplit.pop() as string;
+    const parentFolder = `${pathSplit.join("/")}/`;
+    await this.createFolderLocal(parentFolder);
+
+    const contentBuffer: ArrayBuffer = await this.googleDriveFiles.get(
+      remoteKey,
+      true
+    );
+
+    await this.plugin.app.vault.adapter.writeBinary(localKey, contentBuffer);
+  }
+
+  public async createFolderLocal(localKey: string) {
+    if (!localKey.endsWith("/")) {
+      return;
+    }
+
+    const foldersToBuild = Utils.getFolderLevels(localKey);
+
+    for (const folder of foldersToBuild) {
+      const r = await this.plugin.app.vault.adapter.exists(folder);
+
+      if (!r) {
+        await this.plugin.app.vault.adapter.mkdir(folder);
+      }
+    }
   }
 }

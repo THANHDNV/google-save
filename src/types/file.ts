@@ -116,11 +116,10 @@ export type SyncPlanType = {
 export type DoActualSyncArgs = {
   syncPlan: SyncPlanType;
   sortedKeys: string[];
-  metadataFile: FileOrFolderMixedState;
+  metadataFile?: FileOrFolderMixedState;
   origMetadata: MetadataOnRemote;
-  sizesGoWrong: FileOrFolderMixedState[];
   deletions: DeletionOnRemote[];
-  concurrency: number;
+  concurrency?: number;
 };
 
 export type UploadExtraMetaArgs = {

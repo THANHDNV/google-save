@@ -4,6 +4,8 @@ export type LocalForage = typeof localforage;
 export const DATABASE_NAME = "google_save";
 export enum TABLE {
   FILE_HISTORY = "file_history",
+  SYNC_MAPPING = "sync_mapping",
+  LOCAL_TO_REMOTE = "local_to_remote",
 }
 
 export enum FileFolderHistoryActionType {
@@ -27,4 +29,14 @@ export interface FileFolderHistoryRecord {
   keyType: FileFolderHistoryKeyType;
   renameTo: string;
   vaultRandomID: string;
+}
+
+export interface SyncMetaMappingRecord {
+  localKey: string;
+  remoteKey: string;
+  localSize: number;
+  remoteSize: number;
+  localMtime: number;
+  remoteMtime: number;
+  keyType: "folder" | "file";
 }

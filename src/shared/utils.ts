@@ -47,4 +47,36 @@ export class Utils {
     const d2 = m2.deletions === undefined ? [] : m2.deletions;
     return isEqual(d1, d2);
   };
+
+  /**
+   * Util func for mkdir -p based on the "path" of original file or folder
+   * "a/b/c/" => ["a", "a/b", "a/b/c"]
+   * "a/b/c/d/e.txt" => ["a", "a/b", "a/b/c", "a/b/c/d"]
+   * @param x string
+   * @returns string[] might be empty
+   */
+  public static getFolderLevels = (
+    x: string,
+    addEndingSlash: boolean = false
+  ) => {
+    const res: string[] = [];
+
+    if (x === "" || x === "/") {
+      return res;
+    }
+
+    const y1 = x.split("/");
+    let i = 0;
+    for (let index = 0; index + 1 < y1.length; index++) {
+      let k = y1.slice(0, index + 1).join("/");
+      if (k === "" || k === "/") {
+        continue;
+      }
+      if (addEndingSlash) {
+        k = `${k}/`;
+      }
+      res.push(k);
+    }
+    return res;
+  };
 }
