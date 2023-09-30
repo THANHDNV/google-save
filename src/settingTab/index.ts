@@ -2,14 +2,21 @@ import { App, PluginSettingTab, Setting } from "obsidian";
 import GoogleSavePlugin from "../main";
 import { GoogleAuth } from "../google/GoogleAuth";
 import { Utils } from "../shared/utils";
+import { GoogleSavePluginSettings } from "../types";
+import { FileSync } from "../googleSave/FileSync";
+import { SyncTriggerSourceType } from "../types/file";
 
 export class GoogleSaveSettingTab extends PluginSettingTab {
   public googleAuth: GoogleAuth;
+  private readonly fileSync: FileSync;
+  private readonly settings: GoogleSavePluginSettings;
 
   constructor(app: App, private plugin: GoogleSavePlugin) {
     super(app, plugin);
 
     this.googleAuth = this.plugin.googleAuth;
+    this.settings = this.plugin.settings;
+    this.fileSync = this.plugin.fileSync;
   }
 
   display() {
@@ -53,9 +60,66 @@ export class GoogleSaveSettingTab extends PluginSettingTab {
     }
 
     if (isLoggedIn) {
-      new Setting(containerEl).addButton((button) => {
+      const SyncSetting = new Setting(containerEl).setName("Sync");
+      SyncSetting.addButton((button) => {
         button.setButtonText("Sync").onClick(() => {
           this.plugin.fileSync.sync();
+        });
+      });
+
+      const AutoRunSyncSettings = new Setting(containerEl).setName("Auto-run");
+      AutoRunSyncSettings.addDropdown((dropdown) => {
+        dropdown.addOption("0", "Disable Auto-run");
+        dropdown.addOption(`${1000 * 60 * 1}`, "Auto-run in 1 minute");
+        dropdown.addOption(`${1000 * 60 * 5}`, "Auto-run in 5 minutes");
+        dropdown.addOption(`${1000 * 60 * 10}`, "Auto-run in 10 minutes");
+        dropdown.addOption(`${1000 * 60 * 30}`, "Auto-run in 30 minutes");
+
+        dropdown.setValue(`${this.settings.autoRunMillisecond}`);
+
+        dropdown.onChange(async (value) => {
+          const time = parseInt(value);
+
+          if (value) {
+            if (
+              this.settings.autoRunIntervalId &&
+              time !== this.settings.autoRunMillisecond
+            ) {
+              window.clearTimeout(this.settings.autoRunIntervalId);
+            }
+
+            if (time !== this.settings.autoRunMillisecond) {
+              this.settings.autoRunIntervalId = window.setInterval(() => {
+                this.fileSync.sync(SyncTriggerSourceType.AUTO);
+              }, time);
+            }
+          }
+
+          if (this.settings.autoRunIntervalId) {
+            window.clearTimeout(this.settings.autoRunIntervalId);
+
+            delete this.settings.autoRunIntervalId;
+          }
+
+          this.settings.autoRunMillisecond = time;
+          await this.plugin.saveSettings();
+        });
+      });
+
+      const RunOnInitSetting = new Setting(containerEl).setName("Run on init");
+      RunOnInitSetting.addDropdown((dropdown) => {
+        dropdown.addOption("-1", "Disable");
+        dropdown.addOption("0", "Run immediately");
+        dropdown.addOption(`${1000 * 1}`, "Delay in 1 second");
+        dropdown.addOption(`${1000 * 10}`, "Delay in 10 seconds");
+        dropdown.addOption(`${1000 * 30}`, "Delay in 30 seconds");
+
+        dropdown.setValue(`${this.settings.initRunAfterMillisecond}`);
+        dropdown.onChange(async (value) => {
+          const time = parseInt(value);
+
+          this.settings.initRunAfterMillisecond = time;
+          await this.plugin.saveSettings();
         });
       });
     }

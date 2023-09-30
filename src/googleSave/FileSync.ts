@@ -33,14 +33,15 @@ export class FileSync {
   private googleDriveFiles: GoogleDriveFiles;
   private db: GoogleSaveDb;
 
-  constructor(private readonly plugin: GoogleSavePlugin) {
+  constructor(public readonly plugin: GoogleSavePlugin) {
     this.googleDriveFiles = this.plugin.googleDriveFiles;
     this.vault = this.plugin.app.vault;
-    this.fileHandler = new FileHandler(this.plugin);
+    this.fileHandler = new FileHandler(this);
     this.db = this.plugin.db;
   }
 
   public async sync(syncTriggerSource?: SyncTriggerSourceType) {
+    Utils.createNotice(`Sync started; Source: ${syncTriggerSource}`);
     const remoteFiles = await this.getRemote();
     const { remoteStates, metadataFile } = await this.parseRemoteFiles(
       remoteFiles
@@ -711,8 +712,6 @@ export class FileSync {
 
     for (const key of sortedKeys) {
       const val = mixedStates[key];
-
-      console.log(key, val);
 
       await this.dispatchOperationToActual({ key, mixedState: val });
     }

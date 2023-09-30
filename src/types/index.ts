@@ -6,6 +6,9 @@ export type GoogleSavePluginSettings = {
   fileReverseMap: any;
   rootDir?: string;
   vaultId?: string;
+  autoRunMillisecond?: number;
+  autoRunIntervalId?: number;
+  initRunAfterMillisecond?: number;
 };
 
 export const METADATA_FILE = ".google-save.json";

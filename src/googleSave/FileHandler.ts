@@ -12,6 +12,7 @@ import { Utils } from "../shared/utils";
 import {
   FileOrFolderMixedState,
   GoogleDriveApplicationMimeType,
+  SyncTriggerSourceType,
 } from "../types/file";
 import { GoogleSaveDb } from "../database";
 import {
@@ -21,21 +22,43 @@ import {
   SyncMetaMappingRecord,
 } from "../types/database";
 import { FILE_STAT_SUPPORT_VERSION } from "../types";
+import { FileSync } from "./FileSync";
 
 export class FileHandler {
+  private readonly plugin: GoogleSavePlugin;
   private readonly vault: Vault;
   private readonly googleDriveFiles: GoogleDriveFiles;
   private readonly db: GoogleSaveDb;
 
-  constructor(private readonly plugin: GoogleSavePlugin) {
+  constructor(private readonly fileSync: FileSync) {
+    this.plugin = this.fileSync.plugin;
     this.vault = this.plugin.app.vault;
     this.googleDriveFiles = this.plugin.googleDriveFiles;
     this.db = this.plugin.db;
 
     this.plugin.app.workspace.onLayoutReady(() => {
+      this.enableAutoSyncIfSet();
       this.checkRootFolder();
       this.registerVaultEvents();
+      this.enableInitSyncIfSet();
     });
+  }
+
+  private enableAutoSyncIfSet() {
+    if (this.plugin.settings.autoRunMillisecond) {
+      this.plugin.settings.autoRunIntervalId = window.setInterval(async () => {
+        await this.fileSync.sync(SyncTriggerSourceType.AUTO);
+      }, this.plugin.settings.autoRunMillisecond);
+    }
+  }
+
+  private enableInitSyncIfSet() {
+    if ((this.plugin.settings.initRunAfterMillisecond ?? -1) >= 0) {
+      window.setTimeout(async () => {
+        console.log(this.fileSync);
+        await this.fileSync.sync(SyncTriggerSourceType.AUTO_ONCE_INIT);
+      }, this.plugin.settings.initRunAfterMillisecond);
+    }
   }
 
   public async getRootRemoteId() {
