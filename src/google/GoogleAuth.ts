@@ -1,6 +1,6 @@
 import { requestUrl } from "obsidian";
 import GoogleSavePlugin from "../main";
-import { Utils } from "../shared/utils";
+import { createNotice } from "../shared/utils";
 import { GoogleTokenResponse } from "../types/googleAuth";
 import { LocalStorageKeys } from "../types/localStorage";
 
@@ -98,7 +98,7 @@ export class GoogleAuth {
     });
 
     if (!tokenData) {
-      Utils.createNotice("Error while refreshing authentication");
+      createNotice("Error while refreshing authentication");
       return null;
     }
 
@@ -141,7 +141,7 @@ export class GoogleAuth {
     const refreshToken = this.getRefreshToken();
 
     if (!refreshToken) {
-      Utils.createNotice("Not yet logged in");
+      createNotice("Not yet logged in");
       return false;
     }
 

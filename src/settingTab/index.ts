@@ -1,7 +1,7 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import GoogleSavePlugin from "../main";
 import { GoogleAuth } from "../google/GoogleAuth";
-import { Utils } from "../shared/utils";
+import { createNotice } from "../shared/utils";
 import { GoogleSavePluginSettings } from "../types";
 import { FileSync } from "../googleSave/FileSync";
 import { SyncTriggerSourceType } from "../types/file";
@@ -45,10 +45,10 @@ export class GoogleSaveSettingTab extends PluginSettingTab {
         button.setButtonText("Refresh token").onClick(async () => {
           this.googleAuth.refreshAccessToken().then((token) => {
             if (token) {
-              Utils.createNotice("Refreshed access token");
+              createNotice("Refreshed access token");
               return;
             }
-            Utils.createNotice(
+            createNotice(
               "Unable to refresh access token. Please try logout and re-login"
             );
           });
@@ -63,7 +63,7 @@ export class GoogleSaveSettingTab extends PluginSettingTab {
       const SyncSetting = new Setting(containerEl).setName("Sync");
       SyncSetting.addButton((button) => {
         button.setButtonText("Sync").onClick(() => {
-          this.plugin.fileSync.sync();
+          this.plugin.fileSync.sync(SyncTriggerSourceType.MANUAL);
         });
       });
 

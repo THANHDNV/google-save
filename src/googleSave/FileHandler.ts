@@ -3,12 +3,11 @@ import {
   TFile,
   TFolder,
   Vault,
-  debounce,
   requireApiVersion,
 } from "obsidian";
 import { GoogleDriveFiles } from "../google/GoogleDriveFiles";
 import GoogleSavePlugin from "../main";
-import { Utils } from "../shared/utils";
+import { createNotice, getFolderLevels, statFix } from "../shared/utils";
 import {
   FileOrFolderMixedState,
   GoogleDriveApplicationMimeType,
@@ -38,7 +37,6 @@ export class FileHandler {
 
     this.plugin.app.workspace.onLayoutReady(() => {
       this.enableAutoSyncIfSet();
-      this.checkRootFolder();
       this.registerVaultEvents();
       this.enableInitSyncIfSet();
     });
@@ -55,7 +53,6 @@ export class FileHandler {
   private enableInitSyncIfSet() {
     if ((this.plugin.settings.initRunAfterMillisecond ?? -1) >= 0) {
       window.setTimeout(async () => {
-        console.log(this.fileSync);
         await this.fileSync.sync(SyncTriggerSourceType.AUTO_ONCE_INIT);
       }, this.plugin.settings.initRunAfterMillisecond);
     }
@@ -92,7 +89,7 @@ export class FileHandler {
 
     await this.addFileMapping(id, "/");
 
-    Utils.createNotice("Create root folder");
+    createNotice("Create root folder");
   }
 
   private registerVaultEvents() {
@@ -113,6 +110,7 @@ export class FileHandler {
   }
 
   private async insertDeleteRecord(fileOrFolder: TFile | TFolder) {
+    console.log(fileOrFolder, "delete");
     let k: FileFolderHistoryRecord;
 
     if (fileOrFolder instanceof TFile) {
@@ -185,7 +183,7 @@ export class FileHandler {
       if (requireApiVersion(FILE_STAT_SUPPORT_VERSION)) {
         // TAbstractFile does not contain these info
         // but from API_VER_STAT_FOLDER we can manually stat them by path.
-        const s = await Utils.statFix(this.vault, fileOrFolder.path);
+        const s = await statFix(this.vault, fileOrFolder.path);
         ctime = s.ctime;
         mtime = s.mtime;
       }
@@ -223,7 +221,7 @@ export class FileHandler {
 
       await this.addFileMapping(id, "/" + file.path);
 
-      Utils.createNotice(`Create folder ${file.name}`);
+      createNotice(`Create folder ${file.name}`);
 
       return;
     }
@@ -237,7 +235,7 @@ export class FileHandler {
     );
 
     await this.addFileMapping(id, "/" + file.path);
-    Utils.createNotice(`Create file ${file.name}`);
+    createNotice(`Create file ${file.name}`);
   }
 
   private async handleRenameEvent(file: TAbstractFile, oldPath: string) {
@@ -248,7 +246,7 @@ export class FileHandler {
     const fileId = this.getFileIdFromPath(oldPath);
 
     if (!fileId) {
-      Utils.createNotice(`File ${oldPath} not found in mapping`);
+      createNotice(`File ${oldPath} not found in mapping`);
     }
 
     const oldFolderId = this.getFolderIdFromPath(oldPath);
@@ -263,9 +261,7 @@ export class FileHandler {
 
     await this.updateFileMapping("/" + file.path, "/" + oldPath);
 
-    Utils.createNotice(
-      `${isMovingFile ? "Moved" : "Renamed"} file ${file.name}`
-    );
+    createNotice(`${isMovingFile ? "Moved" : "Renamed"} file ${file.name}`);
   }
 
   private async handleDeleteEvent(file: TAbstractFile) {
@@ -275,7 +271,7 @@ export class FileHandler {
 
     await this.deleteFileMapping("/" + file.path);
 
-    Utils.createNotice(
+    createNotice(
       `Delete ${file instanceof TFolder ? "folder" : "file"} ${file.name}`
     );
   }
@@ -287,9 +283,7 @@ export class FileHandler {
 
     const result = await this.googleDriveFiles.updateFile(fileId, fileData);
 
-    console.log(result);
-
-    Utils.createNotice(`Updated file ${file.name}`);
+    createNotice(`Updated file ${file.name}`);
   }
 
   private async addFileMapping(googleDriveId: string, path: string) {
@@ -340,6 +334,10 @@ export class FileHandler {
     if (!(await this.vault.adapter.trashSystem(x))) {
       await this.vault.adapter.trashLocal(x);
     }
+
+    if (x.endsWith("/")) {
+      await this.db.localToRemoteKeyMapping.delete(x);
+    }
   }
 
   public async clearDeleteRenameHistoryOfKeyAndVault(key: string) {
@@ -384,6 +382,7 @@ export class FileHandler {
 
   public async uploadFile({
     key,
+    remoteKey,
     mtimeLocal,
     mtimeRemote,
     sizeLocal,
@@ -404,11 +403,22 @@ export class FileHandler {
     )) as string;
 
     const buffer = await this.vault.adapter.readBinary(key);
-    const { id } = await this.googleDriveFiles.create(
-      name,
-      parentFolderRemoteId,
-      buffer
-    );
+
+    let id: string;
+
+    if (remoteKey) {
+      const result = await this.googleDriveFiles.updateFile(remoteKey, buffer);
+
+      id = result.id;
+    } else {
+      const result = await this.googleDriveFiles.create(
+        name,
+        parentFolderRemoteId,
+        buffer
+      );
+
+      id = result.id;
+    }
 
     await this.upsertSyncMetaMappingDataByVault({
       localKey: key,
@@ -450,7 +460,7 @@ export class FileHandler {
 
     await Promise.all([
       this.db.localToRemoteKeyMapping.set(key, id),
-      await this.upsertSyncMetaMappingDataByVault({
+      this.upsertSyncMetaMappingDataByVault({
         localKey: key,
         remoteKey: id,
         localMtime: mtimeLocal ?? 0,
@@ -484,7 +494,7 @@ export class FileHandler {
       return;
     }
 
-    const foldersToBuild = Utils.getFolderLevels(localKey);
+    const foldersToBuild = getFolderLevels(localKey);
 
     for (const folder of foldersToBuild) {
       const r = await this.vault.adapter.exists(folder);

@@ -4,6 +4,7 @@ import GoogleSavePlugin from "../main";
 import { v4 as uuid } from "uuid";
 import { GoogleDriveApplicationMimeType, RemoteFile } from "../types/file";
 import { backOff } from "exponential-backoff";
+import { arrayBufferToString } from "../shared/utils";
 
 const GOOGLE_API = "https://www.googleapis.com/";
 
@@ -47,9 +48,9 @@ export class GoogleDriveFiles {
         parents: [parentId],
         mimeType: contentType,
       }
-    )}\r\n--${boundary}\r\ncontent-type: ${contentType}\r\nContent-Transfer-Encoding: base64\r\n\r\n${Buffer.from(
-      fileBuffer
-    ).toString("base64")}\r\n--${boundary}--`;
+    )}\r\n--${boundary}\r\ncontent-type: ${contentType}\r\nContent-Transfer-Encoding: base64\r\n\r\n${window.btoa(
+      arrayBufferToString(fileBuffer)
+    )}\r\n--${boundary}--`;
 
     const { json } = await this.request({
       pathname: "/upload/drive/v3/files",

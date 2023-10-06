@@ -1,99 +1,106 @@
 import { Notice, Stat, Vault } from "obsidian";
-import path from "path";
 import { MetadataOnRemote } from "../types/metadata";
 import isEqual from "lodash.isequal";
 
-export class Utils {
-  private static noticeMap: Map<string, moment.Moment> = new Map();
+const noticeMap: Map<string, moment.Moment> = new Map();
 
-  public static createNotice(text: string, ignoreTimeout = false): void {
-    const now = window.moment();
+export const createNotice = (text: string, ignoreTimeout = false) => {
+  const now = window.moment();
 
-    if (this.noticeMap.has(text)) {
-      const lastDisplay = this.noticeMap.get(text);
+  if (noticeMap.has(text)) {
+    const lastDisplay = noticeMap.get(text);
 
-      if (!lastDisplay || lastDisplay.isBefore(now) || ignoreTimeout) {
-        new Notice(text);
-        this.noticeMap.set(text, now.add(1, "minute"));
-      }
-    } else {
-      console.log(`[Google Saver] ${text}`);
+    if (!lastDisplay || lastDisplay.isBefore(now) || ignoreTimeout) {
       new Notice(text);
-      this.noticeMap.set(text, now.add(0, "minute"));
+      noticeMap.set(text, now.add(1, "minute"));
     }
+  } else {
+    console.log(`[Google Saver] ${text}`);
+    new Notice(text);
+    noticeMap.set(text, now.add(0, "minute"));
   }
+};
 
-  public static getParentFolder = (a: string) => {
-    const b = path.posix.dirname(a);
-    if (b === "." || b === "/") {
-      // the root
-      return "/";
-    }
-    if (b.endsWith("/")) {
-      return b;
-    }
-    return `${b}/`;
-  };
+export const getParentFolder = (a: string) => {
+  const pathSplit = a.split("/");
+  if (a.endsWith("/")) {
+    pathSplit.pop();
+  }
+  pathSplit.pop();
 
-  public static isEqualMetadataOnRemote = (
-    a: MetadataOnRemote,
-    b: MetadataOnRemote
-  ) => {
-    const m1 = a === undefined ? { deletions: [] } : a;
-    const m2 = b === undefined ? { deletions: [] } : b;
+  const b = pathSplit.join("/");
 
-    // we only need to compare deletions
-    const d1 = m1.deletions === undefined ? [] : m1.deletions;
-    const d2 = m2.deletions === undefined ? [] : m2.deletions;
-    return isEqual(d1, d2);
-  };
+  return `${b}/`;
+};
 
-  /**
-   * Util func for mkdir -p based on the "path" of original file or folder
-   * "a/b/c/" => ["a", "a/b", "a/b/c"]
-   * "a/b/c/d/e.txt" => ["a", "a/b", "a/b/c", "a/b/c/d"]
-   * @param x string
-   * @returns string[] might be empty
-   */
-  public static getFolderLevels = (
-    x: string,
-    addEndingSlash: boolean = false
-  ) => {
-    const res: string[] = [];
+export const isEqualMetadataOnRemote = (
+  a: MetadataOnRemote,
+  b: MetadataOnRemote
+) => {
+  const m1 = a === undefined ? { deletions: [] } : a;
+  const m2 = b === undefined ? { deletions: [] } : b;
 
-    if (x === "" || x === "/") {
-      return res;
-    }
+  // we only need to compare deletions
+  const d1 = m1.deletions === undefined ? [] : m1.deletions;
+  const d2 = m2.deletions === undefined ? [] : m2.deletions;
+  return isEqual(d1, d2);
+};
 
-    const y1 = x.split("/");
-    let i = 0;
-    for (let index = 0; index + 1 < y1.length; index++) {
-      let k = y1.slice(0, index + 1).join("/");
-      if (k === "" || k === "/") {
-        continue;
-      }
-      if (addEndingSlash) {
-        k = `${k}/`;
-      }
-      res.push(k);
-    }
+/**
+ * Util func for mkdir -p based on the "path" of original file or folder
+ * "a/b/c/" => ["a", "a/b", "a/b/c"]
+ * "a/b/c/d/e.txt" => ["a", "a/b", "a/b/c", "a/b/c/d"]
+ * @param x string
+ * @returns string[] might be empty
+ */
+export const getFolderLevels = (x: string, addEndingSlash: boolean = false) => {
+  const res: string[] = [];
+
+  if (x === "" || x === "/") {
     return res;
-  };
-
-  public static async statFix(vault: Vault, path: string) {
-    const s: any = (await vault.adapter.stat(path)) as Stat;
-    if (s.ctime === undefined || s.ctime === null || Number.isNaN(s.ctime)) {
-      s.ctime = undefined;
-    }
-    if (s.mtime === undefined || s.mtime === null || Number.isNaN(s.mtime)) {
-      s.mtime = undefined;
-    }
-    if (
-      (s.size === undefined || s.size === null || Number.isNaN(s.size)) &&
-      s.type === "folder"
-    ) {
-      s.size = 0;
-    }
-    return s;
   }
-}
+
+  const y1 = x.split("/");
+  let i = 0;
+  for (let index = 0; index + 1 < y1.length; index++) {
+    let k = y1.slice(0, index + 1).join("/");
+    if (k === "" || k === "/") {
+      continue;
+    }
+    if (addEndingSlash) {
+      k = `${k}/`;
+    }
+    res.push(k);
+  }
+  return res;
+};
+
+export const statFix = async (vault: Vault, path: string) => {
+  const s: any = (await vault.adapter.stat(path)) as Stat;
+  if (s.ctime === undefined || s.ctime === null || Number.isNaN(s.ctime)) {
+    s.ctime = undefined;
+  }
+  if (s.mtime === undefined || s.mtime === null || Number.isNaN(s.mtime)) {
+    s.mtime = undefined;
+  }
+  if (
+    (s.size === undefined || s.size === null || Number.isNaN(s.size)) &&
+    s.type === "folder"
+  ) {
+    s.size = 0;
+  }
+  return s;
+};
+
+export const arrayBufferToString = (arrayBuffer: ArrayBuffer): string => {
+  return String.fromCharCode.apply(null, new Uint8Array(arrayBuffer));
+};
+
+export const stringToArrayBuffer = (str: string): ArrayBuffer => {
+  const buf = new ArrayBuffer(str.length);
+  const bufView = new Uint8Array(buf);
+  for (let i = 0, strLen = str.length; i < strLen; i++) {
+    bufView[i] = str.charCodeAt(i);
+  }
+  return buf;
+};

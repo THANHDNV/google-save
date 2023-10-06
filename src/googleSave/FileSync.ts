@@ -25,13 +25,21 @@ import {
 import { DeletionOnRemote, MetadataOnRemote } from "../types/metadata";
 import { FileFolderHistoryActionType } from "../types/database";
 import { GoogleSaveDb } from "../database";
-import { Utils } from "../shared/utils";
+import {
+  arrayBufferToString,
+  createNotice,
+  getParentFolder,
+  isEqualMetadataOnRemote,
+  statFix,
+  stringToArrayBuffer,
+} from "../shared/utils";
 
 export class FileSync {
   private fileHandler: FileHandler;
   private vault: Vault;
   private googleDriveFiles: GoogleDriveFiles;
   private db: GoogleSaveDb;
+  private isRunning = false;
 
   constructor(public readonly plugin: GoogleSavePlugin) {
     this.googleDriveFiles = this.plugin.googleDriveFiles;
@@ -41,39 +49,60 @@ export class FileSync {
   }
 
   public async sync(syncTriggerSource?: SyncTriggerSourceType) {
-    Utils.createNotice(`Sync started; Source: ${syncTriggerSource}`);
-    const remoteFiles = await this.getRemote();
-    const { remoteStates, metadataFile } = await this.parseRemoteFiles(
-      remoteFiles
-    );
+    if (this.isRunning) {
+      createNotice("Sync is already running!");
+      return;
+    }
+    this.isRunning = true;
+    this.plugin.updateSyncRunningStatus();
 
-    const metadataOnRemote = await this.getRemoteMetadataFile(
-      metadataFile?.remoteKey
-    );
+    createNotice(`Sync started; Source: ${syncTriggerSource}`);
+    const start = Date.now();
 
-    const localFiles = await this.getLocal();
+    try {
+      const remoteFiles = await this.getRemote();
+      const { remoteStates, metadataFile } = await this.parseRemoteFiles(
+        remoteFiles
+      );
 
-    const localFileHistory = await this.db.fileHistory.getAll();
+      const metadataOnRemote = await this.getRemoteMetadataFile(
+        metadataFile?.remoteKey
+      );
 
-    const { plan, sortedKeys, deletions } = await this.getSyncPlan({
-      localFileHistory: Object.values(localFileHistory),
-      localFiles,
-      remoteDeleteFiles: metadataOnRemote.deletions || [],
-      remoteFileStates: remoteStates,
-      syncTriggerSource,
-    });
+      const localFiles = await this.getLocal();
 
-    Utils.createNotice("Got the plan!");
+      const localFileHistory = await this.db.fileHistory.getAll();
 
-    await this.doActualSync({
-      syncPlan: plan,
-      deletions,
-      metadataFile,
-      origMetadata: metadataOnRemote,
-      sortedKeys,
-    });
+      const { plan, sortedKeys, deletions } = await this.getSyncPlan({
+        localFileHistory: Object.values(localFileHistory),
+        localFiles,
+        remoteDeleteFiles: metadataOnRemote.deletions || [],
+        remoteFileStates: remoteStates,
+        syncTriggerSource,
+      });
 
-    Utils.createNotice("Sync completed!!!!!!!!");
+      createNotice("Got the plan!");
+
+      await this.doActualSync({
+        syncPlan: plan,
+        deletions,
+        metadataFile,
+        origMetadata: metadataOnRemote,
+        sortedKeys,
+      });
+    } catch (error) {
+      createNotice("Some error occurred, sync ended");
+      this.isRunning = false;
+      this.plugin.updateSyncFinishedStatus();
+
+      return;
+    }
+
+    const end = Date.now();
+
+    createNotice(`Sync completed in: ${(end - start) / 1000}s`);
+    this.isRunning = false;
+    this.plugin.updateSyncFinishedStatus();
   }
 
   private async getRemote() {
@@ -163,9 +192,9 @@ export class FileSync {
       true
     );
 
-    const metadataFileContent = Buffer.from(
+    const metadataFileContent = arrayBufferToString(
       metaDataFileContentArrayBuffer
-    ).toString("utf-8");
+    );
     const metadataFile = JSON.parse(metadataFileContent) as MetadataOnRemote;
 
     return metadataFile;
@@ -451,7 +480,7 @@ export class FileSync {
         // stat API made available
         if (requireApiVersion(FILE_STAT_SUPPORT_VERSION)) {
           if (r.existLocal) {
-            const fileStat = await Utils.statFix(this.vault, r.key);
+            const fileStat = await statFix(this.vault, r.key);
             const cmtime = Math.max(fileStat?.ctime ?? 0, fileStat?.mtime ?? 0);
 
             if (
@@ -460,7 +489,7 @@ export class FileSync {
               cmtime >= deltimeLocal &&
               cmtime >= deltimeRemote
             ) {
-              keptFolder.add(Utils.getParentFolder(r.key));
+              keptFolder.add(getParentFolder(r.key));
 
               if (r.existLocal && r.existRemote) {
                 r.decision = DecisionTypeForFolder.SKIP_FOLDER;
@@ -484,7 +513,7 @@ export class FileSync {
           (r.mtimeLocal || 0) > deltimeLocal &&
           (r.mtimeLocal || 0) > deltimeRemote
         ) {
-          keptFolder.add(Utils.getParentFolder(r.key));
+          keptFolder.add(getParentFolder(r.key));
           if (r.existLocal && r.existRemote) {
             r.decision = DecisionTypeForFolder.SKIP_FOLDER;
             r.decisionBranch = 16;
@@ -511,7 +540,7 @@ export class FileSync {
           }
         }
       } else {
-        keptFolder.add(Utils.getParentFolder(r.key));
+        keptFolder.add(getParentFolder(r.key));
         if (r.existLocal && r.existRemote) {
           r.decision =
             DecisionTypeForFolder.UPLOAD_LOCAL_DELETE_HISTORY_TO_REMOTE_FOLDER;
@@ -526,7 +555,7 @@ export class FileSync {
         }
       }
     } else {
-      keptFolder.add(Utils.getParentFolder(r.key));
+      keptFolder.add(getParentFolder(r.key));
       if (r.existLocal && r.existRemote) {
         r.decision = DecisionTypeForFolder.SKIP_FOLDER;
         r.decisionBranch = 12;
@@ -624,7 +653,7 @@ export class FileSync {
           r.decision = DecisionTypeForFile.UPLOAD_LOCAL_TO_REMOTE;
           r.decisionBranch = 4;
         }
-        keptFolder.add(Utils.getParentFolder(r.key));
+        keptFolder.add(getParentFolder(r.key));
         return r;
       }
     }
@@ -651,7 +680,7 @@ export class FileSync {
         r.decision = DecisionTypeForFile.DOWNLOAD_REMOTE_TO_LOCAL;
         r.decisionBranch = 5;
 
-        keptFolder.add(Utils.getParentFolder(r.key));
+        keptFolder.add(getParentFolder(r.key));
         return r;
       }
     }
@@ -708,7 +737,7 @@ export class FileSync {
       deletions,
     });
 
-    Utils.createNotice("Updated metadata on remote");
+    createNotice("Updated metadata on remote");
 
     for (const key of sortedKeys) {
       const val = mixedStates[key];
@@ -726,7 +755,9 @@ export class FileSync {
       deletions,
     };
 
-    if (Utils.isEqualMetadataOnRemote(origMetadata, newMetadata)) {
+    console.log(metadataFile?.remoteKey);
+
+    if (isEqualMetadataOnRemote(origMetadata, newMetadata)) {
       return;
     }
 
@@ -736,10 +767,15 @@ export class FileSync {
       await this.googleDriveFiles.create(
         METADATA_FILE,
         rootId,
-        Buffer.from(JSON.stringify(newMetadata))
+        stringToArrayBuffer(JSON.stringify(newMetadata))
       );
 
       return;
+    } else {
+      await this.googleDriveFiles.updateFile(
+        metadataFile.remoteKey,
+        stringToArrayBuffer(JSON.stringify(newMetadata))
+      );
     }
   }
 
