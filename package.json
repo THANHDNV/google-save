@@ -9,7 +9,7 @@
     "version": "node version-bump.mjs && git add manifest.json versions.json"
   },
   "keywords": [],
-  "author": "",
+  "author": "THANHDNV",
   "license": "MIT",
   "devDependencies": {
     "@types/lodash.isequal": "^4.5.6",
