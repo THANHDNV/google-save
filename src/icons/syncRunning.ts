@@ -1,6 +1,6 @@
-import { RefreshCcw, createElement } from "lucide";
+import { FolderSync, createElement } from "lucide";
 
-const SyncRunningSvg = createElement(RefreshCcw);
+const SyncRunningSvg = createElement(FolderSync);
 SyncRunningSvg.setAttribute("width", "100");
 SyncRunningSvg.setAttribute("height", "100");
 

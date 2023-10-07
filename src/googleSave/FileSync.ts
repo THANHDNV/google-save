@@ -91,6 +91,9 @@ export class FileSync {
         sortedKeys,
       });
     } catch (error) {
+      // TODO: think of a better way to do this
+      console.log(error);
+
       createNotice("Some error occurred, sync ended");
       this.isRunning = false;
       this.plugin.updateSyncFinishedStatus();

@@ -1,4 +1,4 @@
-import { RequestUrlParam, requestUrl } from "obsidian";
+import { RequestUrlParam, arrayBufferToBase64, requestUrl } from "obsidian";
 import { GoogleAuth } from "./GoogleAuth";
 import GoogleSavePlugin from "../main";
 import { v4 as uuid } from "uuid";
@@ -48,8 +48,8 @@ export class GoogleDriveFiles {
         parents: [parentId],
         mimeType: contentType,
       }
-    )}\r\n--${boundary}\r\ncontent-type: ${contentType}\r\nContent-Transfer-Encoding: base64\r\n\r\n${window.btoa(
-      arrayBufferToString(fileBuffer)
+    )}\r\n--${boundary}\r\ncontent-type: ${contentType}\r\nContent-Transfer-Encoding: base64\r\n\r\n${arrayBufferToBase64(
+      fileBuffer
     )}\r\n--${boundary}--`;
 
     const { json } = await this.request({
@@ -126,9 +126,9 @@ export class GoogleDriveFiles {
       {
         mimeType: contentType,
       }
-    )}\r\n--${boundary}\r\ncontent-type: ${contentType}\r\nContent-Transfer-Encoding: base64\r\n\r\n${Buffer.from(
+    )}\r\n--${boundary}\r\ncontent-type: ${contentType}\r\nContent-Transfer-Encoding: base64\r\n\r\n${arrayBufferToBase64(
       fileBuffer
-    ).toString("base64")}\r\n--${boundary}--`;
+    )}\r\n--${boundary}--`;
 
     const { json } = await this.request({
       pathname: `/upload/drive/v3/files/${fileId}`,
