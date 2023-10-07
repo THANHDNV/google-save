@@ -755,8 +755,6 @@ export class FileSync {
       deletions,
     };
 
-    console.log(metadataFile?.remoteKey);
-
     if (isEqualMetadataOnRemote(origMetadata, newMetadata)) {
       return;
     }

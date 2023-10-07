@@ -110,7 +110,6 @@ export class FileHandler {
   }
 
   private async insertDeleteRecord(fileOrFolder: TFile | TFolder) {
-    console.log(fileOrFolder, "delete");
     let k: FileFolderHistoryRecord;
 
     if (fileOrFolder instanceof TFile) {
