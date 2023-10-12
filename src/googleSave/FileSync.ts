@@ -71,10 +71,12 @@ export class FileSync {
 
       const localFiles = await this.getLocal();
 
-      const localFileHistory = await this.db.fileHistory.getAll();
+      const localFileHistory = Object.values(
+        await this.db.fileHistory.getAll()
+      ).sort((a, b) => a.actionWhen - b.actionWhen);
 
       const { plan, sortedKeys, deletions } = await this.getSyncPlan({
-        localFileHistory: Object.values(localFileHistory),
+        localFileHistory,
         localFiles,
         remoteDeleteFiles: metadataOnRemote.deletions || [],
         remoteFileStates: remoteStates,
