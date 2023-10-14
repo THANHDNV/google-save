@@ -172,7 +172,7 @@ export class FileHandler {
         keyType: FileFolderHistoryKeyType.FILE,
         renameTo: "", // itself is the destination, so no need to set this field
       };
-    } else if (fileOrFolder instanceof TFolder) {
+    } else {
       const key = oldPath.endsWith("/") ? oldPath : `${oldPath}/`;
       const renameTo = fileOrFolder.path.endsWith("/")
         ? fileOrFolder.path
@@ -207,6 +207,11 @@ export class FileHandler {
         renameTo: "", // itself is the destination, so no need to set this field
       };
     }
+
+    await Promise.all([
+      this.db.fileHistory.set(k1.key, k1),
+      this.db.fileHistory.set(k2.key, k2),
+    ]);
   }
 
   private async addFileMapping(googleDriveId: string, path: string) {
