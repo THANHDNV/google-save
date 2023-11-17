@@ -79,6 +79,10 @@ export class GoogleDriveFiles {
     const { json } = await this.request({
       pathname: "/drive/v3/files",
       method: "POST",
+      headers: {
+        "Content-Type": `application/json; charset=UTF-8`,
+      },
+      contentType: "application/json",
       body: JSON.stringify(body),
     });
 
