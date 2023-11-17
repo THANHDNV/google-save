@@ -477,10 +477,9 @@ export class FileSync {
     }
 
     if (!keptFolder.has(r.key)) {
-      if (!r.deltimeLocal || !r.deltimeRemote) {
-        const deltimeLocal = r.deltimeLocal !== undefined ? r.deltimeLocal : 0;
-        const deltimeRemote =
-          r.deltimeRemote !== undefined ? r.deltimeRemote : 0;
+      if (!!r.deltimeLocal || !!r.deltimeRemote) {
+        const deltimeLocal = !!r.deltimeLocal ? r.deltimeLocal : 0;
+        const deltimeRemote = !!r.deltimeRemote ? r.deltimeRemote : 0;
 
         // stat API made available
         if (requireApiVersion(FILE_STAT_SUPPORT_VERSION)) {
