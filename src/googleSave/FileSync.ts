@@ -786,8 +786,11 @@ export class FileSync {
     mixedState,
   }: DispatchOperationToActualArgs) {
     switch (mixedState.decision) {
-      case DecisionTypeForFile.SKIP_UPLOADING:
       case DecisionTypeForFolder.SKIP_FOLDER:
+        if (mixedState.existLocal && mixedState.existRemote) {
+          await this.db.localToRemoteKeyMapping.set(key, mixedState.remoteKey!);
+        }
+      case DecisionTypeForFile.SKIP_UPLOADING:
         // do nothing
         break;
       case DecisionTypeForFile.UPLOAD_LOCAL_DELETE_HISTORY_TO_REMOTE:
