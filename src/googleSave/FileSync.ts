@@ -84,6 +84,8 @@ export class FileSync {
         syncTriggerSource,
       });
 
+      console.log({ plan, sortedKeys, deletions });
+
       createNotice("Got the plan!");
 
       await this.doActualSync({
@@ -668,18 +670,12 @@ export class FileSync {
           );
         }
 
-        if (r.mtimeLocal === r.mtimeRemote) {
+        if (r.remoteHash && r.localHash === r.remoteHash) {
           // local and remote both exist and mtimes are the same
-          if (r.remoteHash && r.localHash === r.remoteHash) {
-            // do not need to consider skipSizeLargerThan in this case
-            r.decision = DecisionTypeForFile.SKIP_UPLOADING;
-            r.decisionBranch = 1;
-          } else {
-            r.decision = DecisionTypeForFile.UPLOAD_LOCAL_TO_REMOTE;
-            r.decisionBranch = 2;
-          }
+          r.decision = DecisionTypeForFile.SKIP_UPLOADING;
+          r.decisionBranch = 1;
         } else {
-          // we have local laregest mtime,
+          // we have local largest mtime,
           // and the remote not existing or smaller mtime
           r.decision = DecisionTypeForFile.UPLOAD_LOCAL_TO_REMOTE;
           r.decisionBranch = 4;
