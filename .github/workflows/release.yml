@@ -34,6 +34,7 @@ jobs:
       - name: Update version
         run: |
           tag="${GITHUB_REF#refs/tags/}"
+          git checkout "$tag"
           yarn version --new-version "$tag"
 
       - name: Push changes
