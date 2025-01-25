@@ -5,6 +5,10 @@ on:
     tags:
       - "*"
 
+env:
+  INPUT_GITHUB_EMAIL: github-actions[bot]@users.noreply.github.com
+  INPUT_GITHUB_USERNAME: github-actions[bot]
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,6 +25,21 @@ jobs:
         run: |
           yarn
           yarn build
+
+      - name: Config Git
+        run: |
+          git config --global user.email "$INPUT_GITHUB_EMAIL"
+          git config --global user.name "$INPUT_GITHUB_USERNAME"
+
+      - name: Update version
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          yarn version --new-version "$tag"
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create release
         env:
