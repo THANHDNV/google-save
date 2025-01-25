@@ -26,10 +26,11 @@ jobs:
           yarn
           yarn build
 
-      - name: Config Git
+      - name: Config
         run: |
           git config --global user.email "$INPUT_GITHUB_EMAIL"
           git config --global user.name "$INPUT_GITHUB_USERNAME"
+          yarn config set version-git-message "%s"
 
       - name: Update version
         run: |
@@ -42,6 +43,8 @@ jobs:
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          tags: true
+          push_only_tags: true
 
       - name: Create release
         env:
