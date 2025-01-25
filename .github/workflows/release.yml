@@ -40,6 +40,7 @@ jobs:
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          push_only_tags: true
 
       - name: Create release
         env:
@@ -47,7 +48,5 @@ jobs:
         run: |
           tag="${GITHUB_REF#refs/tags/}"
 
-          gh release create "$tag" \
-            --title="$tag" \
-            --draft \
+          gh release upload "$tag" \
             main.js manifest.json styles.css
