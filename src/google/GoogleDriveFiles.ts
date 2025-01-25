@@ -158,7 +158,7 @@ export class GoogleDriveFiles {
 
     const query: Record<string, string> = {
       q: `'${folderId}' in parents and trashed=false`,
-      fields: "files(id,name,mimeType,modifiedTime,size)",
+      fields: "files(id,name,mimeType,modifiedTime,size,md5Checksum)",
     };
 
     if (pageToken) {

@@ -33,6 +33,7 @@ import {
   statFix,
   stringToArrayBuffer,
 } from "../shared/utils";
+import crypto from "crypto";
 
 export class FileSync {
   private fileHandler: FileHandler;
@@ -83,31 +84,55 @@ export class FileSync {
         syncTriggerSource,
       });
 
-      createNotice("Got the plan!");
+      // createNotice("Got the plan!");
 
-      await this.doActualSync({
-        syncPlan: plan,
-        deletions,
-        metadataFile,
-        origMetadata: metadataOnRemote,
-        sortedKeys,
-      });
+      // await this.doActualSync({
+      //   syncPlan: plan,
+      //   deletions,
+      //   metadataFile,
+      //   origMetadata: metadataOnRemote,
+      //   sortedKeys,
+      // });
+
+      // console.log(plan, sortedKeys, deletions);
     } catch (error) {
       // TODO: think of a better way to do this
       console.log(error);
 
       createNotice("Some error occurred, sync ended");
+    } finally {
       this.isRunning = false;
       this.plugin.updateSyncFinishedStatus();
-
-      return;
     }
 
     const end = Date.now();
 
     createNotice(`Sync completed in: ${(end - start) / 1000}s`);
-    this.isRunning = false;
-    this.plugin.updateSyncFinishedStatus();
+  }
+
+  private async checkFileHash(
+    localFile: TFile,
+    remoteFile: RemoteFile
+  ): Promise<boolean> {
+    const localFileContent = await this.vault.readBinary(localFile);
+    const localFileHash = await this.getMd5Checksum(localFileContent);
+
+    const remoteFileHash = remoteFile.md5Checksum;
+
+    return localFileHash === remoteFileHash;
+  }
+
+  // private async calculateHash(content: ArrayBuffer): Promise<string> {
+  //   const hashBuffer = await crypto.subtle.digest("SHA-256", content);
+  //   const hashArray = Array.from(new Uint8Array(hashBuffer));
+  //   const hashHex = hashArray
+  //     .map((b) => b.toString(16).padStart(2, "0"))
+  //     .join("");
+  //   return hashHex;
+  // }
+
+  private async getMd5Checksum(content: ArrayBuffer): Promise<string> {
+    return crypto.createHash("md5").update(Buffer.from(content)).digest("hex");
   }
 
   private async getRemote() {
@@ -153,6 +178,7 @@ export class FileSync {
           existRemote: true,
           sizeRemote: backwardMapping.localSize,
           mtimeRemote: backwardMapping.localMtime ?? mTimeRemote,
+          remoteHash: remoteFile.md5Checksum,
         };
       } else {
         file = {
@@ -161,6 +187,7 @@ export class FileSync {
           existRemote: true,
           mtimeRemote: mTimeRemote,
           sizeRemote: isFolder ? 0 : parseInt(remoteFile.size),
+          remoteHash: remoteFile.md5Checksum,
         };
       }
 
@@ -274,14 +301,13 @@ export class FileSync {
       }
     }
 
-    const currTs = Date.now();
     const plan = {
       ts: Date.now(),
       syncTriggerSource,
       mixedStates,
     };
     return {
-      plan: plan,
+      plan,
       sortedKeys: sortedKeys.sort((a, b) => a.length - b.length),
       deletions: deletions,
     };
@@ -293,18 +319,20 @@ export class FileSync {
     remoteDeleteFiles,
     localFileHistory,
   }: AssembleMixedStatesArgs): Promise<Record<string, FileOrFolderMixedState>> {
-    const result: Record<string, FileOrFolderMixedState> = {};
-
-    for (const remoteFileState of remoteFileStates) {
+    const result = remoteFileStates.reduce<
+      Record<string, FileOrFolderMixedState>
+    >((result, remoteFileState) => {
       const key = remoteFileState.key;
 
       if (this.isSkippableFile(key)) {
-        continue;
+        return result;
       }
 
       result[key] = remoteFileState;
-      result[key].existLocal = false;
-    }
+      result[key].existRemote = true;
+
+      return result;
+    }, {});
 
     for (const localFile of localFiles) {
       const key =
@@ -328,21 +356,18 @@ export class FileSync {
 
         r = {
           key,
-          existLocal: true,
           mtimeLocal,
           sizeLocal: localFile.stat.size,
+          localHash: await this.getMd5Checksum(
+            await this.vault.readBinary(localFile)
+          ),
         };
-      }
-
-      if (localFile instanceof TFolder) {
+      } else if (localFile instanceof TFolder) {
         r = {
           key,
-          existLocal: true,
           sizeLocal: 0,
         };
-      }
-
-      if (!r) {
+      } else {
         throw new Error("Unknown file type");
       }
 
@@ -350,10 +375,12 @@ export class FileSync {
         result[key] = {
           ...result[key],
           ...r,
+          existLocal: true,
         };
       } else {
         result[key] = {
           ...r,
+          existLocal: true,
           existRemote: false,
         };
       }
@@ -643,7 +670,7 @@ export class FileSync {
 
         if (r.mtimeLocal === r.mtimeRemote) {
           // local and remote both exist and mtimes are the same
-          if (r.sizeLocal === sizeRemoteComp) {
+          if (r.remoteHash && r.localHash === r.remoteHash) {
             // do not need to consider skipSizeLargerThan in this case
             r.decision = DecisionTypeForFile.SKIP_UPLOADING;
             r.decisionBranch = 1;
@@ -669,7 +696,7 @@ export class FileSync {
         mtimeRemote >= deltimeLocal &&
         mtimeRemote >= deltimeRemote
       ) {
-        // we have remote laregest mtime,
+        // we have remote largest mtime,
         // and the local not existing or smaller mtime
         if (sizeRemoteComp === undefined) {
           throw new Error(
@@ -681,8 +708,13 @@ export class FileSync {
           );
         }
 
-        r.decision = DecisionTypeForFile.DOWNLOAD_REMOTE_TO_LOCAL;
-        r.decisionBranch = 5;
+        if (r.localHash && r.remoteHash === r.localHash) {
+          r.decision = DecisionTypeForFile.SKIP_UPLOADING;
+          r.decisionBranch = 3;
+        } else {
+          r.decision = DecisionTypeForFile.DOWNLOAD_REMOTE_TO_LOCAL;
+          r.decisionBranch = 5;
+        }
 
         keptFolder.add(getParentFolder(r.key));
         return r;

@@ -13,6 +13,9 @@ export interface RemoteFile {
 
   /** Number, size in bytes */
   size: string;
+
+  /** MD5 checksum */
+  md5Checksum: string;
 }
 
 export enum DecisionTypeForFile {
@@ -84,6 +87,10 @@ export interface FileOrFolderMixedState {
   syncDone?: boolean;
 
   changeLocalMtimeUsingMapping?: boolean;
+
+  remoteHash?: string;
+
+  localHash?: string;
 }
 
 export type GetSyncPlanArgs = {
