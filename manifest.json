@@ -1,7 +1,7 @@
 {
 	"id": "google-save-plugin",
 	"name": "Google Save",
-	"version": "1.0.6-alpha.6",
+	"version": "1.0.6-alpha.8",
 	"minAppVersion": "0.15.0",
 	"description": "This is a plugin for Obsidian (https://obsidian.md), combining with Google Drive for syncing files",
 	"author": "Obsidian",
