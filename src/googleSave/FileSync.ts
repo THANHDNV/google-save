@@ -84,15 +84,15 @@ export class FileSync {
         syncTriggerSource,
       });
 
-      // createNotice("Got the plan!");
+      createNotice("Got the plan!");
 
-      // await this.doActualSync({
-      //   syncPlan: plan,
-      //   deletions,
-      //   metadataFile,
-      //   origMetadata: metadataOnRemote,
-      //   sortedKeys,
-      // });
+      await this.doActualSync({
+        syncPlan: plan,
+        deletions,
+        metadataFile,
+        origMetadata: metadataOnRemote,
+        sortedKeys,
+      });
 
       // console.log(plan, sortedKeys, deletions);
     } catch (error) {
