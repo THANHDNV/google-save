@@ -122,6 +122,30 @@ export class GoogleSaveSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         });
       });
+
+      const ConcurrencySetting = new Setting(containerEl).setName(
+        "Concurrency"
+      );
+      ConcurrencySetting.addText((textfield) => {
+        textfield.inputEl.type = "number";
+        textfield.setValue(String(this.plugin.settings.concurrency));
+
+        textfield.setValue(`${this.settings.concurrency}`);
+
+        textfield.onChange(async (value) => {
+          const concurrency = parseInt(value);
+
+          if (isNaN(concurrency) || concurrency < 1) {
+            textfield.inputEl.style.border = "1px solid red";
+            createNotice("Invalid concurrency value");
+            return;
+          }
+
+          textfield.inputEl.style.border = "initial";
+          this.settings.concurrency = concurrency;
+          await this.plugin.saveSettings();
+        });
+      });
     }
   }
 }

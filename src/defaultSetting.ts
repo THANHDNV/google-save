@@ -6,4 +6,5 @@ export const DEFAULT_SETTINGS: GoogleSavePluginSettings = {
   googleOauthServer: "https://google-save-server.vercel.app",
   autoRunMillisecond: 0,
   initRunAfterMillisecond: -1,
+  concurrency: 1,
 };

@@ -99,6 +99,7 @@ export class FileSync {
         metadataFile,
         origMetadata: metadataOnRemote,
         sortedKeys,
+        concurrency: this.plugin.settings.concurrency,
       });
 
       // console.log(plan, sortedKeys, deletions);
@@ -764,7 +765,7 @@ export class FileSync {
     metadataFile,
     origMetadata,
     deletions,
-    concurrency = 5,
+    concurrency = 1,
   }: DoActualSyncArgs) {
     const mixedStates = syncPlan.mixedStates;
 

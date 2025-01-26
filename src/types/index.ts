@@ -7,6 +7,7 @@ export type GoogleSavePluginSettings = {
   autoRunMillisecond?: number;
   autoRunIntervalId?: number;
   initRunAfterMillisecond?: number;
+  concurrency: number;
 };
 
 export const METADATA_FILE = ".google-save.json";
