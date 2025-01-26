@@ -1,4 +1,5 @@
 import {
+  Notice,
   TFile,
   TFolder,
   Vault,
@@ -29,11 +30,15 @@ import {
   arrayBufferToString,
   createNotice,
   getParentFolder,
+  getParentPath,
   isEqualMetadataOnRemote,
   statFix,
   stringToArrayBuffer,
 } from "../shared/utils";
 import crypto from "crypto";
+import EventEmitter from "events";
+import pLimit from "p-limit";
+import { v4 as uuid } from "uuid";
 
 export class FileSync {
   private fileHandler: FileHandler;
@@ -770,6 +775,79 @@ export class FileSync {
     });
 
     createNotice("Updated metadata on remote");
+
+    const limit = pLimit(concurrency); // Limit to a certain concurrent operations
+    const dependencyMap = new Map<string, string[]>(); // Tracks child dependencies
+    const completionMap = new Map<string, Promise<void>>(); // Tracks completion promises
+    let taskCount = 0;
+
+    // Build dependency map
+
+    await new Promise<void>(async (resolve) => {
+      const id = uuid();
+      const notice = new Notice(`Updated file 0/${sortedKeys.length}`);
+
+      const eventListener = new EventEmitter();
+
+      eventListener.on(`synced-${id}`, (path?: string) => {
+        taskCount++;
+
+        notice.setMessage(`Updated file ${taskCount}/${sortedKeys.length}`);
+
+        if (taskCount === sortedKeys.length) {
+          eventListener.removeAllListeners();
+          notice.hide();
+          resolve();
+        }
+      });
+
+      // build dependency map
+      for (const filePath of sortedKeys) {
+        const parentPath = getParentPath(filePath);
+        if (parentPath) {
+          if (!dependencyMap.has(parentPath)) {
+            dependencyMap.set(parentPath, []);
+          }
+          dependencyMap.get(parentPath)!.push(filePath);
+        }
+      }
+
+      // Process a single path
+      const processPath = async (key: string): Promise<void> => {
+        const mixedState = mixedStates[key];
+
+        // Wait for the parent path to complete, if it exists
+        const parentPath = getParentPath(key);
+        if (parentPath && completionMap.has(parentPath)) {
+          await completionMap.get(parentPath);
+        }
+
+        // Sync the current path
+        await this.dispatchOperationToActual({ key, mixedState });
+        eventListener.emit(`synced-${id}`, key);
+
+        // Mark this path as completed and trigger dependent paths
+        if (dependencyMap.has(key)) {
+          const children = dependencyMap.get(key)!;
+          for (const child of children) {
+            if (!completionMap.has(child)) {
+              const childTask = limit(() => processPath(child));
+              completionMap.set(child, childTask);
+            }
+          }
+        }
+      };
+
+      // Start processing root paths (paths with no dependencies)
+      for (const key of sortedKeys) {
+        if (!getParentPath(key)) {
+          if (!completionMap.has(key)) {
+            const rootTask = limit(() => processPath(key));
+            completionMap.set(key, rootTask);
+          }
+        }
+      }
+    });
 
     for (const key of sortedKeys) {
       const val = mixedStates[key];

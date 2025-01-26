@@ -4,19 +4,28 @@ import isEqual from "lodash.isequal";
 
 const noticeMap: Map<string, moment.Moment> = new Map();
 
-export const createNotice = (text: string, ignoreTimeout = false) => {
+export const createNotice = (
+  text: string,
+  {
+    ignoreTimeout = false,
+    duration,
+  }: {
+    ignoreTimeout?: boolean;
+    duration?: number;
+  } = {}
+) => {
   const now = window.moment();
 
   if (noticeMap.has(text)) {
     const lastDisplay = noticeMap.get(text);
 
     if (!lastDisplay || lastDisplay.isBefore(now) || ignoreTimeout) {
-      new Notice(text);
+      new Notice(text, duration);
       noticeMap.set(text, now.add(1, "minute"));
     }
   } else {
     console.log(`[Google Saver] ${text}`);
-    new Notice(text);
+    new Notice(text, duration);
     noticeMap.set(text, now.add(0, "minute"));
   }
 };
@@ -103,4 +112,10 @@ export const stringToArrayBuffer = (str: string): ArrayBuffer => {
     bufView[i] = str.charCodeAt(i);
   }
   return buf;
+};
+
+export const getParentPath = (filePath: string): string | null => {
+  const parts = filePath.split("/").filter(Boolean);
+  if (parts.length <= 1) return null;
+  return "/" + parts.slice(0, -1).join("/");
 };
