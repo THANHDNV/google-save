@@ -89,8 +89,6 @@ export class FileSync {
         syncTriggerSource,
       });
 
-      console.log({ plan, sortedKeys, deletions });
-
       createNotice("Got the plan!");
 
       await this.doActualSync({
@@ -812,13 +810,7 @@ export class FileSync {
       // build dependency map
       for (const filePath of sortedKeys) {
         const parentPath = getParentPath(filePath);
-        console.log({
-          filePath,
-          parentPath,
-          parentFileExist: parentPath
-            ? fileAvailabilities.get(parentPath)
-            : null,
-        });
+
         if (parentPath && fileAvailabilities.get(parentPath)) {
           if (!dependencyMap.has(parentPath)) {
             dependencyMap.set(parentPath, []);
