@@ -5,6 +5,7 @@ import {
   Vault,
   normalizePath,
   requireApiVersion,
+  Events,
 } from "obsidian";
 import { GoogleDriveFiles } from "../google/GoogleDriveFiles";
 import GoogleSavePlugin from "../main";
@@ -791,15 +792,14 @@ export class FileSync {
       const id = uuid();
       const notice = new Notice(`Updated file 0/${sortedKeys.length}`, 0);
 
-      const eventListener = new EventEmitter();
+      const synEvent = new Events();
 
-      eventListener.on(`synced-${id}`, (path?: string) => {
+      synEvent.on(`synced-${id}`, (path?: string) => {
         taskCount++;
 
         notice.setMessage(`Updated file ${taskCount}/${sortedKeys.length}`);
 
         if (taskCount === sortedKeys.length) {
-          eventListener.removeAllListeners();
           setTimeout(() => {
             notice.hide();
           }, 3000);
@@ -831,7 +831,7 @@ export class FileSync {
 
         // Sync the current path
         await this.dispatchOperationToActual({ key, mixedState });
-        eventListener.emit(`synced-${id}`, key);
+        synEvent.trigger(`synced-${id}`, key);
 
         // Mark this path as completed and trigger dependent paths
         if (dependencyMap.has(key)) {
