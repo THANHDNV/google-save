@@ -764,7 +764,7 @@ export class FileSync {
     metadataFile,
     origMetadata,
     deletions,
-    concurrency = 1,
+    concurrency = 5,
   }: DoActualSyncArgs) {
     const mixedStates = syncPlan.mixedStates;
 
@@ -780,12 +780,17 @@ export class FileSync {
     const dependencyMap = new Map<string, string[]>(); // Tracks child dependencies
     const completionMap = new Map<string, Promise<void>>(); // Tracks completion promises
     let taskCount = 0;
+    const fileAvailabilities = new Map<string, boolean>();
+
+    for (const key of sortedKeys) {
+      fileAvailabilities.set(key, true);
+    }
 
     // Build dependency map
 
     await new Promise<void>(async (resolve) => {
       const id = uuid();
-      const notice = new Notice(`Updated file 0/${sortedKeys.length}`);
+      const notice = new Notice(`Updated file 0/${sortedKeys.length}`, 0);
 
       const eventListener = new EventEmitter();
 
@@ -796,7 +801,9 @@ export class FileSync {
 
         if (taskCount === sortedKeys.length) {
           eventListener.removeAllListeners();
-          notice.hide();
+          setTimeout(() => {
+            notice.hide();
+          }, 3000);
           resolve();
         }
       });
@@ -804,7 +811,14 @@ export class FileSync {
       // build dependency map
       for (const filePath of sortedKeys) {
         const parentPath = getParentPath(filePath);
-        if (parentPath) {
+        console.log({
+          filePath,
+          parentPath,
+          parentFileExist: parentPath
+            ? fileAvailabilities.get(parentPath)
+            : null,
+        });
+        if (parentPath && fileAvailabilities.get(parentPath)) {
           if (!dependencyMap.has(parentPath)) {
             dependencyMap.set(parentPath, []);
           }
@@ -840,7 +854,8 @@ export class FileSync {
 
       // Start processing root paths (paths with no dependencies)
       for (const key of sortedKeys) {
-        if (!getParentPath(key)) {
+        const parentPath = getParentPath(key);
+        if (!parentPath || !fileAvailabilities.get(parentPath)) {
           if (!completionMap.has(key)) {
             const rootTask = limit(() => processPath(key));
             completionMap.set(key, rootTask);
@@ -848,12 +863,6 @@ export class FileSync {
         }
       }
     });
-
-    for (const key of sortedKeys) {
-      const val = mixedStates[key];
-
-      await this.dispatchOperationToActual({ key, mixedState: val });
-    }
   }
 
   private async uploadExtraMeta({

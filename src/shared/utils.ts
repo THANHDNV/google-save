@@ -117,5 +117,7 @@ export const stringToArrayBuffer = (str: string): ArrayBuffer => {
 export const getParentPath = (filePath: string): string | null => {
   const parts = filePath.split("/").filter(Boolean);
   if (parts.length <= 1) return null;
-  return "/" + parts.slice(0, -1).join("/");
+  parts.pop();
+  const parentFolder = `${parts.join("/")}/`;
+  return parentFolder;
 };
