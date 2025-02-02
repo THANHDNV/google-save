@@ -40,7 +40,6 @@ import crypto from "crypto";
 import pLimit from "p-limit";
 import { v4 as uuid } from "uuid";
 import md5 from "md5";
-import { Buffer } from "buffer";
 
 export class FileSync {
   private fileHandler: FileHandler;
@@ -79,28 +78,42 @@ export class FileSync {
 
       const localFiles = await this.getLocal();
 
-      const localFileHistory = Object.values(
-        await this.db.fileHistory.getAll()
-      ).sort((a, b) => a.actionWhen - b.actionWhen);
+      console.log(
+        await Promise.all(
+          localFiles.map(async (f) => {
+            if (f instanceof TFile) {
+              return {
+                ...f,
+                hash: await this.getMd5Checksum(await this.vault.readBinary(f)),
+              };
+            }
+            return f;
+          })
+        )
+      );
 
-      const { plan, sortedKeys, deletions } = await this.getSyncPlan({
-        localFileHistory,
-        localFiles,
-        remoteDeleteFiles: metadataOnRemote.deletions || [],
-        remoteFileStates: remoteStates,
-        syncTriggerSource,
-      });
+      // const localFileHistory = Object.values(
+      //   await this.db.fileHistory.getAll()
+      // ).sort((a, b) => a.actionWhen - b.actionWhen);
 
-      createNotice("Got the plan!");
+      // const { plan, sortedKeys, deletions } = await this.getSyncPlan({
+      //   localFileHistory,
+      //   localFiles,
+      //   remoteDeleteFiles: metadataOnRemote.deletions || [],
+      //   remoteFileStates: remoteStates,
+      //   syncTriggerSource,
+      // });
 
-      await this.doActualSync({
-        syncPlan: plan,
-        deletions,
-        metadataFile,
-        origMetadata: metadataOnRemote,
-        sortedKeys,
-        concurrency: this.plugin.settings.concurrency,
-      });
+      // createNotice("Got the plan!");
+
+      // await this.doActualSync({
+      //   syncPlan: plan,
+      //   deletions,
+      //   metadataFile,
+      //   origMetadata: metadataOnRemote,
+      //   sortedKeys,
+      //   concurrency: this.plugin.settings.concurrency,
+      // });
 
       // console.log(plan, sortedKeys, deletions);
     } catch (error) {
@@ -119,7 +132,7 @@ export class FileSync {
   }
 
   private async getMd5Checksum(content: ArrayBuffer): Promise<string> {
-    return md5(Buffer.from(content));
+    return md5(new Uint8Array(content));
   }
 
   private async getRemote() {
