@@ -40,6 +40,7 @@ import crypto from "crypto";
 import pLimit from "p-limit";
 import { v4 as uuid } from "uuid";
 import md5 from "md5";
+import { Buffer } from "buffer";
 
 export class FileSync {
   private fileHandler: FileHandler;
