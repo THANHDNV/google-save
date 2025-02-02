@@ -78,42 +78,28 @@ export class FileSync {
 
       const localFiles = await this.getLocal();
 
-      console.log(
-        await Promise.all(
-          localFiles.map(async (f) => {
-            if (f instanceof TFile) {
-              return {
-                ...f,
-                hash: await this.getMd5Checksum(await this.vault.readBinary(f)),
-              };
-            }
-            return f;
-          })
-        )
-      );
+      const localFileHistory = Object.values(
+        await this.db.fileHistory.getAll()
+      ).sort((a, b) => a.actionWhen - b.actionWhen);
 
-      // const localFileHistory = Object.values(
-      //   await this.db.fileHistory.getAll()
-      // ).sort((a, b) => a.actionWhen - b.actionWhen);
+      const { plan, sortedKeys, deletions } = await this.getSyncPlan({
+        localFileHistory,
+        localFiles,
+        remoteDeleteFiles: metadataOnRemote.deletions || [],
+        remoteFileStates: remoteStates,
+        syncTriggerSource,
+      });
 
-      // const { plan, sortedKeys, deletions } = await this.getSyncPlan({
-      //   localFileHistory,
-      //   localFiles,
-      //   remoteDeleteFiles: metadataOnRemote.deletions || [],
-      //   remoteFileStates: remoteStates,
-      //   syncTriggerSource,
-      // });
+      createNotice("Got the plan!");
 
-      // createNotice("Got the plan!");
-
-      // await this.doActualSync({
-      //   syncPlan: plan,
-      //   deletions,
-      //   metadataFile,
-      //   origMetadata: metadataOnRemote,
-      //   sortedKeys,
-      //   concurrency: this.plugin.settings.concurrency,
-      // });
+      await this.doActualSync({
+        syncPlan: plan,
+        deletions,
+        metadataFile,
+        origMetadata: metadataOnRemote,
+        sortedKeys,
+        concurrency: this.plugin.settings.concurrency,
+      });
 
       // console.log(plan, sortedKeys, deletions);
     } catch (error) {
