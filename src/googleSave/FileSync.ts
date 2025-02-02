@@ -37,9 +37,9 @@ import {
   stringToArrayBuffer,
 } from "../shared/utils";
 import crypto from "crypto";
-import EventEmitter from "events";
 import pLimit from "p-limit";
 import { v4 as uuid } from "uuid";
+import md5 from "md5";
 
 export class FileSync {
   private fileHandler: FileHandler;
@@ -117,29 +117,8 @@ export class FileSync {
     createNotice(`Sync completed in: ${(end - start) / 1000}s`);
   }
 
-  private async checkFileHash(
-    localFile: TFile,
-    remoteFile: RemoteFile
-  ): Promise<boolean> {
-    const localFileContent = await this.vault.readBinary(localFile);
-    const localFileHash = await this.getMd5Checksum(localFileContent);
-
-    const remoteFileHash = remoteFile.md5Checksum;
-
-    return localFileHash === remoteFileHash;
-  }
-
-  // private async calculateHash(content: ArrayBuffer): Promise<string> {
-  //   const hashBuffer = await crypto.subtle.digest("SHA-256", content);
-  //   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  //   const hashHex = hashArray
-  //     .map((b) => b.toString(16).padStart(2, "0"))
-  //     .join("");
-  //   return hashHex;
-  // }
-
   private async getMd5Checksum(content: ArrayBuffer): Promise<string> {
-    return crypto.createHash("md5").update(Buffer.from(content)).digest("hex");
+    return md5(Buffer.from(content));
   }
 
   private async getRemote() {

@@ -13,6 +13,7 @@
   "license": "MIT",
   "devDependencies": {
     "@types/lodash.isequal": "^4.5.6",
+    "@types/md5": "^2.3.5",
     "@types/node": "^16.11.6",
     "@types/uuid": "^9.0.2",
     "@typescript-eslint/eslint-plugin": "5.29.0",
@@ -28,6 +29,7 @@
     "localforage": "^1.10.0",
     "lodash.isequal": "^4.5.0",
     "lucide": "^0.284.0",
+    "md5": "^2.3.0",
     "moment": "^2.29.4",
     "p-limit": "^6.2.0",
     "uuid": "^9.0.1"
