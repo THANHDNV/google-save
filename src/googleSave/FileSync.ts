@@ -36,7 +36,6 @@ import {
   statFix,
   stringToArrayBuffer,
 } from "../shared/utils";
-import crypto from "crypto";
 import pLimit from "p-limit";
 import { v4 as uuid } from "uuid";
 import md5 from "md5";
@@ -91,6 +90,13 @@ export class FileSync {
       });
 
       createNotice("Got the plan!");
+
+      // clear sync meta mapping data except for certain keys
+      await this.fileHandler.clearSyncMetaMappingDataExceptFor(
+        Object.values(plan.mixedStates)
+          .filter((f) => !!f.remoteKey)
+          .map((f) => f.remoteKey!)
+      );
 
       await this.doActualSync({
         syncPlan: plan,
@@ -466,7 +472,13 @@ export class FileSync {
       }
     }
 
-    return result;
+    return Object.entries(result).reduce((acc, [key, val]) => {
+      if (val.existLocal || val.existRemote) {
+        acc[key] = val;
+      }
+
+      return acc;
+    }, {} as Record<string, FileOrFolderMixedState>);
   }
 
   private isSkippableFile(key: string) {

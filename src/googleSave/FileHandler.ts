@@ -268,6 +268,18 @@ export class FileHandler {
     });
   }
 
+  public async clearSyncMetaMappingDataExceptFor(exceptionKeys: string[] = []) {
+    const allData = await this.db.syncMapping.getAll();
+
+    for (const key of Object.keys(allData)) {
+      if (exceptionKeys.includes(key)) {
+        break;
+      }
+
+      await this.db.syncMapping.delete(key);
+    }
+  }
+
   public async uploadFile({
     key,
     remoteKey,
