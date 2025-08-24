@@ -809,7 +809,7 @@ export class FileSync {
         }
 
         // Sync the current path
-        await this.dispatchOperationToActual({ key, mixedState });
+        await this.dispatchOperationToActual({ key, mixedState, mixedStates });
         synEvent.trigger(`synced-${id}`, key);
 
         // Mark this path as completed and trigger dependent paths
@@ -871,6 +871,7 @@ export class FileSync {
   private async dispatchOperationToActual({
     key,
     mixedState,
+    mixedStates,
   }: DispatchOperationToActualArgs) {
     switch (mixedState.decision) {
       case DecisionTypeForFolder.SKIP_FOLDER:
@@ -891,6 +892,19 @@ export class FileSync {
 
         if (mixedState.existRemote && mixedState.remoteKey) {
           // remove remote
+          const parentPath = getParentPath(key);
+          if (
+            parentPath &&
+            mixedStates[parentPath] &&
+            mixedStates[parentPath].existRemote &&
+            [
+              DecisionTypeForFile.UPLOAD_LOCAL_DELETE_HISTORY_TO_REMOTE,
+              DecisionTypeForFolder.UPLOAD_LOCAL_DELETE_HISTORY_TO_REMOTE_FOLDER,
+            ].includes(mixedStates[parentPath].decision!)
+          ) {
+            // If the parent folder is also being deleted, we can skip this file
+            break;
+          }
           await this.googleDriveFiles.deleteFile(mixedState.remoteKey);
         }
 

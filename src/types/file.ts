@@ -137,5 +137,6 @@ export type UploadExtraMetaArgs = {
 
 export type DispatchOperationToActualArgs = {
   mixedState: FileOrFolderMixedState;
+  mixedStates: Record<string, FileOrFolderMixedState>;
   key: string;
 };
